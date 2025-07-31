@@ -951,14 +951,21 @@ document.addEventListener('DOMContentLoaded', async function() {
         const costPerLevelArray = [];
         const memFragsCostArray = [];
         const memFragsCountArray = [];
+        const cronCostArray = [];
+        const cronStoneCountArray = [];
         let totalAttempts = 0;
         let totalCostValue = 0;
         let totalMemFragsCost = 0;
         let totalMemFragsCount = 0;
+        let totalCronCost = 0;
+        let totalCronCount = 0;
         
         // Check if we're using cron stones and memory fragments
         const useCron = useCronCheckbox && useCronCheckbox.checked;
         const useMemFrags = useMemFragsCheckbox && useMemFragsCheckbox.checked;
+        
+        // Arrays to track which levels use cron stones
+        const useCronPerLevelArray = [];
         
         // Calculate for each enhancement step
         for (let index = 0; index < failstacks.length; index++) {
@@ -967,6 +974,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             const startIndex = levels.indexOf(startLevel);
             const currentLevel = levels[startIndex + index];
             
+            // Determine if we should use cron stones for this specific level
+            // If not using cron globally, still use cron for the first level to prevent downgrade below starting level
+            const useCronForThisLevel = useCron || (index === 0 && currentLevel !== 'BASE');
+            useCronPerLevelArray.push(useCronForThisLevel);
+            
             // Calculate success chance using the utility function
             const successChance = calculateSuccessChance(item, currentLevel, fs);
             const failChance = 100 - successChance; // The chance of failure
@@ -974,11 +986,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Calculate expected attempts (100/success rate for percentage to attempts conversion)
             let expectedAttempts = 100 / successChance;
             
-            // Get the cost for this attempt (asynchronously)
+            // Get the cost for this attempt (asynchronously) - use cron based on per-level decision
             const costDetails = await calculateAttemptCost(
                 item, 
                 currentLevel, 
-                useCron,
+                useCronForThisLevel,
                 useMemFrags
             );
             
@@ -987,7 +999,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             let levelMemFragsCost = 0;
             let levelMemFragsCount = 0;
             
-            if (!useCron && currentLevel !== 'BASE') {
+            if (!useCronForThisLevel && currentLevel !== 'BASE') {
                 // When not using cron stones and item is not at BASE level,
                 // each failure causes a downgrade
                 // This means additional attempts and materials will be needed
@@ -1023,8 +1035,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                         const prevLevel = previousLevels[prevIdx].level;
                         const prevFS = previousLevels[prevIdx].failstack;
                         
-                        // Get cost of one attempt at this level
-                        const levelCostDetails = await calculateAttemptCost(item, prevLevel, useCron, useMemFrags);
+                        // Determine if we should use cron for this recovery level
+                        // If it's the very first level (to prevent downgrade below starting level), use cron
+                        const useCronForRecovery = useCron || (prevIdx === 0 && prevLevel !== 'BASE');
+                        
+                        // Get cost of one attempt at this level - using the same cron stone logic
+                        const levelCostDetails = await calculateAttemptCost(item, prevLevel, useCronForRecovery, useMemFrags);
                         
                         // Calculate success rate for this level
                         const levelSuccessChance = calculateSuccessChance(item, prevLevel, prevFS);
@@ -1040,6 +1056,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                             const levelMemCount = levelCostDetails.memFragsCount * levelExpectedAttempts * recoveryCostMultiplier;
                             downgradedMemFragsCost += levelMemCost;
                             downgradedMemFragsCount += levelMemCount;
+                        }
+                        
+                        // Track cron stone usage in recovery attempts
+                        if (useCronForRecovery) {
+                            const cronStoneCount = enhancementItemRequirements[item]?.[prevLevel]?.cronStones || 0;
+                            const levelCronCount = cronStoneCount * levelExpectedAttempts * recoveryCostMultiplier;
+                            const levelCronCost = 3000000 * levelCronCount; // 3 million per cron stone
+                            
+                            // Add to our total cron tracking (these will be added to the totals later)
+                            totalCronCount += levelCronCount;
+                            totalCronCost += levelCronCost;
+                            
+                            // Log the cron costs for recovery attempts
+                            console.log(`Adding recovery cron costs for ${prevLevel}: ${Math.round(levelCronCount).toLocaleString()} stones (${Math.round(levelCronCost).toLocaleString()} Silver)`);
                         }
                         
                         // For the next lower level, we need to account for additional failures
@@ -1076,6 +1106,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             } else {
                 // With cron stones, no downgrades occur but durability is still lost
                 levelCost = costDetails.totalCost * expectedAttempts;
+                
+                // Store cron stone details
+                const cronCost = costDetails.cronCost * expectedAttempts;
+                const cronStoneCount = enhancementItemRequirements[item]?.[currentLevel]?.cronStones || 0;
                 
                 // Memory fragment costs still apply as durability is lost with each attempt
                 if (useMemFrags) {
@@ -1143,6 +1177,24 @@ document.addEventListener('DOMContentLoaded', async function() {
             totalMemFragsCost += levelMemFragsCost;
             totalMemFragsCount += levelMemFragsCount;
             
+            // Track cron stone usage - now using per-level decision and the cost details from calculateAttemptCost
+            if (useCronForThisLevel) {
+                // The costDetails already includes the cronCost for one attempt
+                const cronStoneCount = enhancementItemRequirements[item]?.[currentLevel]?.cronStones || 0;
+                const totalCronStonesForLevel = cronStoneCount * expectedAttempts;
+                const cronCost = costDetails.cronCost * expectedAttempts; // Use the cronCost from the details
+                
+                cronCostArray.push(cronCost);
+                cronStoneCountArray.push(totalCronStonesForLevel);
+                totalCronCost += cronCost;
+                totalCronCount += totalCronStonesForLevel;
+                
+                console.log(`For level ${currentLevel}: Using ${Math.round(totalCronStonesForLevel).toLocaleString()} cron stones (${Math.round(cronCost).toLocaleString()} Silver)`);
+            } else {
+                cronCostArray.push(0);
+                cronStoneCountArray.push(0);
+            }
+            
             // Store success chance with 3 decimal places precision
             successChancesArray.push(successChance.toFixed(3));
         }
@@ -1167,8 +1219,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             totalMemFragsCost: Math.round(totalMemFragsCost),
             memFragsCount: memFragsCountArray,
             totalMemFragsCount: Math.round(totalMemFragsCount),
+            cronCost: cronCostArray,
+            cronStoneCount: cronStoneCountArray,
+            totalCronCost: Math.round(totalCronCost),
+            totalCronCount: Math.round(totalCronCount),
             includeMemFrags: useMemFrags,
-            useCronStones: useCron
+            useCronStones: useCron,
+            useCronPerLevel: useCronPerLevelArray // Track which levels used cron stones
         };
     }
     
@@ -1191,36 +1248,95 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Always show the total cost without specifying components in this line
         costInfo.innerHTML = `<strong>Estimated Total Cost:</strong> ${results.totalCost.toLocaleString()} Silver`
         
+        // Always add cost breakdown section
+        const costBreakdown = createElement('div', { className: 'cost-breakdown' });
+        costBreakdown.style.marginLeft = '20px';
+        costBreakdown.style.fontSize = '0.9em';
+        costBreakdown.style.marginTop = '5px';
+        
+        // Check if any cron stones were used (either globally or for first level only)
+        if (results.totalCronCount > 0) {
+            // Global cron stones enabled
+            if (useCronCheckbox && useCronCheckbox.checked) {
+                costBreakdown.innerHTML = 
+                    `• <strong>Cron Stones:</strong> ${Math.round(results.totalCronCount).toLocaleString()} stones (${Math.round(results.totalCronCost).toLocaleString()} Silver)`;
+            } 
+            // Only first level cron stones (protection from downgrade below starting level)
+            else {
+                // Calculate cron stones from direct enhancement and from recovery attempts
+                const directEnhancementCronCount = results.cronStoneCount[0] > 0 ? Math.round(results.cronStoneCount[0]) : 0;
+                const directEnhancementCronCost = results.cronCost[0] > 0 ? Math.round(results.cronCost[0]) : 0;
+                
+                // Calculate total cron cost from recovery attempts (difference between total and direct)
+                const recoveryCronCount = Math.max(0, Math.round(results.totalCronCount - directEnhancementCronCount));
+                const recoveryCronCost = Math.max(0, Math.round(results.totalCronCost - directEnhancementCronCost));
+                
+                if (directEnhancementCronCount > 0 || recoveryCronCount > 0) {
+                    costBreakdown.innerHTML = 
+                        `• <strong>Total Cron Stone Usage:</strong> ${Math.round(results.totalCronCount).toLocaleString()} stones (${Math.round(results.totalCronCost).toLocaleString()} Silver)`;
+                    
+                    // Add breakdown of direct vs recovery cron usage
+                    costBreakdown.innerHTML +=
+                        `<br><span style="margin-left: 15px; color: #2ecc71;">↳ Direct enhancement: ${directEnhancementCronCount.toLocaleString()} stones (${directEnhancementCronCost.toLocaleString()} Silver)</span>`;
+                    
+                    if (recoveryCronCount > 0) {
+                        costBreakdown.innerHTML +=
+                            `<br><span style="margin-left: 15px; color: #e74c3c;">↳ Recovery attempts: ${recoveryCronCount.toLocaleString()} stones (${recoveryCronCost.toLocaleString()} Silver)</span>`;
+                    }
+                    
+                    costBreakdown.innerHTML +=
+                        `<br><span style="color: #2ecc71; font-size: 0.9em;">Protection against downgrade below ${formatEnhancementLevel(results.startLevel)}</span>`;
+                }
+            }
+            
+            if (results.includeMemFrags) {
+                costBreakdown.innerHTML += `<br>• <strong>Memory Fragments:</strong> ${Math.round(results.totalMemFragsCount).toLocaleString()} fragments (${Math.round(results.totalMemFragsCost).toLocaleString()} Silver)`;
+            }
+            
+            costInfo.appendChild(costBreakdown);
+        } 
+        // No cron stones used at all
+        else if (results.includeMemFrags) {
+            costBreakdown.innerHTML = `• <strong>Memory Fragments:</strong> ${Math.round(results.totalMemFragsCount).toLocaleString()} fragments (${Math.round(results.totalMemFragsCost).toLocaleString()} Silver)`;
+            costInfo.appendChild(costBreakdown);
+        }
+        
         const attemptsInfo = createElement('p', {}, '');
         
-        // Show a different message based on whether cron stones are used
-        if (useCronCheckbox && useCronCheckbox.checked) {
-            attemptsInfo.innerHTML = `<strong>Estimated Total Attempts:</strong> ${results.attemptsPrediction}`;
-        } else {
+        // Always show the total attempts
+        attemptsInfo.innerHTML = `<strong>Estimated Total Attempts:</strong> ${results.attemptsPrediction}`;
+        
+        // Show additional breakdown for recovery attempts if any
+        if (!useCronCheckbox || !useCronCheckbox.checked) {
             // Calculate total direct and recovery attempts
             let totalDirectAttempts = 0;
             let totalRecoveryAttempts = 0;
             
             for (let i = 0; i < results.expectedAttempts.length; i++) {
                 totalDirectAttempts += parseFloat(results.expectedAttempts[i]);
-                totalRecoveryAttempts += results.recoveryAttempts && results.recoveryAttempts[i] 
-                    ? parseFloat(results.recoveryAttempts[i]) 
-                    : 0;
+                // Only count recovery attempts for levels that don't use cron stones
+                if (!results.useCronPerLevel || !results.useCronPerLevel[i]) {
+                    totalRecoveryAttempts += results.recoveryAttempts && results.recoveryAttempts[i] 
+                        ? parseFloat(results.recoveryAttempts[i]) 
+                        : 0;
+                }
             }
             
-            attemptsInfo.innerHTML = `<strong>Overall Total Attempts:</strong> ${results.attemptsPrediction} <span style="font-size: 0.9em; color: #e74c3c; font-weight: bold;">(Includes all direct + recovery attempts)</span>`;
-            
-            // Add detailed breakdown of attempts
-            const attemptsBreakdown = createElement('div', {}, '');
-            attemptsBreakdown.style.marginLeft = '20px';
-            attemptsBreakdown.style.fontSize = '0.9em';
-            attemptsBreakdown.style.marginTop = '5px';
-            
-            attemptsBreakdown.innerHTML = 
-                `• <strong>Direct Attempts:</strong> ${totalDirectAttempts.toFixed(2)} <span style="color: #555;">(Initial enhancement attempts)</span><br>` +
-                `• <strong>Recovery Attempts:</strong> ${totalRecoveryAttempts.toFixed(2)} <span style="color: #e74c3c;">(Additional attempts after downgrades)</span>`;
-            
-            attemptsInfo.appendChild(attemptsBreakdown);
+            if (totalRecoveryAttempts > 0) {
+                attemptsInfo.innerHTML += ` <span style="font-size: 0.9em; color: #e74c3c; font-weight: bold;">(Includes all direct + recovery attempts)</span>`;
+                
+                // Add detailed breakdown of attempts
+                const attemptsBreakdown = createElement('div', {}, '');
+                attemptsBreakdown.style.marginLeft = '20px';
+                attemptsBreakdown.style.fontSize = '0.9em';
+                attemptsBreakdown.style.marginTop = '5px';
+                
+                attemptsBreakdown.innerHTML = 
+                    `• <strong>Direct Attempts:</strong> ${totalDirectAttempts.toFixed(2)} <span style="color: #555;">(Initial enhancement attempts)</span><br>` +
+                    `• <strong>Recovery Attempts:</strong> ${totalRecoveryAttempts.toFixed(2)} <span style="color: #e74c3c;">(Additional attempts after downgrades)</span>`;
+                
+                attemptsInfo.appendChild(attemptsBreakdown);
+            }
         }
         
         const detailsTitle = createElement('h3', {}, 'Enhancement Details:');
@@ -1269,10 +1385,31 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             
             detailContent += `, Cost: ${Math.round(results.costPerLevel[i]).toLocaleString()} Silver`;
+            
+            // Add cron stone cost details if cron stones are used for this level
+            if (results.useCronPerLevel && results.useCronPerLevel[i] && results.cronCost && results.cronCost[i] > 0) {
+                // Special message for first level cron when global cron is disabled
+                if (i === 0 && !(useCronCheckbox && useCronCheckbox.checked)) {
+                    detailContent += `<br><span style="margin-left: 15px; color: #2ecc71;">• Base Protection Cron Stones: ${Math.round(results.cronStoneCount[i]).toLocaleString()} (${Math.round(results.cronCost[i]).toLocaleString()} Silver)</span>`;
+                    
+                    // Calculate how many cron stones are used for recovery attempts for this level
+                    const directCronCount = Math.round(results.cronStoneCount[i]);
+                    const totalCronCount = Math.round(results.totalCronCount);
+                    const recoveryCronCount = totalCronCount - directCronCount;
+                    
+                    if (recoveryCronCount > 0) {
+                        detailContent += `<br><span style="margin-left: 15px; color: #e74c3c;">• Recovery Cron Stones: ~${recoveryCronCount.toLocaleString()} for recovery attempts</span>`;
+                    }
+                    
+                    detailContent += `<br><span style="margin-left: 15px; font-size: 0.85em; color: #7f8c8d;">Protection against downgrade below ${formatEnhancementLevel(results.startLevel)}</span>`;
+                } else {
+                    detailContent += `<br><span style="margin-left: 15px; color: #3498db;">• Cron Stones: ${Math.round(results.cronStoneCount[i]).toLocaleString()} (${Math.round(results.cronCost[i]).toLocaleString()} Silver)</span>`;
+                }
+            }
                                 
             // Add memory fragment info if included
             if (results.includeMemFrags) {
-                detailContent += `, Memory Fragments: ${Math.round(results.memFragsCount[i]).toLocaleString()} (${Math.round(results.memFragsCost[i]).toLocaleString()} Silver)`;
+                detailContent += `<br><span style="margin-left: 15px; color: #9b59b6;">• Memory Fragments: ${Math.round(results.memFragsCount[i]).toLocaleString()} (${Math.round(results.memFragsCost[i]).toLocaleString()} Silver)</span>`;
             }
                                 
             // Add note about downgrades if not using cron and not enhancing from BASE level
