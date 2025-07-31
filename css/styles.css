@@ -223,6 +223,14 @@ button:disabled {
     margin-top: 1.5rem;
 }
 
+/* Cost breakdown styles */
+.cost-breakdown {
+    margin-left: 20px;
+    margin-top: 5px;
+    font-size: 0.9em;
+    line-height: 1.6;
+}
+
 /* Input and checkbox styles */
 .input-group {
     display: flex;

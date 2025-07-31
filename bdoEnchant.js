@@ -156,8 +156,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     //       cronStones: count,                        // Cron stones needed for this enhancement
     //       enhancementData: {                        // Data for calculating enhancement success chances
     //         baseChance: number,                     // Base success chance percentage at 0 failstacks
-    //         softcap: { fs: number, chance: number}, // Softcap failstack threshold and chance
-    //         hardcap: { fs: number, chance: number}  // Hardcap failstack threshold and max chance
     //       }
     //     } 
     //   }
@@ -171,8 +169,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cronStones: 0,                               // No cron stones needed for BASE->I
                 enhancementData: {
                     baseChance: 16.300,
-                    softcap: { fs: 33, chance: 70.09 },
-                    hardcap: { fs: 95, chance: 90 },
                     recommendedFS: 38
                 }
             },
@@ -181,8 +177,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cronStones: 120,                              // 120 cron stones for I->II
                 enhancementData: {
                     baseChance: 7.300,
-                    softcap: { fs: 86, chance: 70.08 },
-                    hardcap: { fs: 223, chance: 90 },
                     recommendedFS: 66
                 }
             },
@@ -191,8 +185,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cronStones: 280,                              // 280 cron stones for II->III
                 enhancementData: {
                     baseChance: 4.570,
-                    softcap: { fs: 144, chance: 70.38 },
-                    hardcap: { fs: 359, chance: 90 },
                     recommendedFS: 96
                 }
             },
@@ -201,8 +193,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cronStones: 540,                              // 540 cron stones for III->IV
                 enhancementData: {
                     baseChance: 2.890,
-                    softcap: { fs: 233, chance: 70.23 },
-                    hardcap: { fs: 576, chance: 90 },
                     recommendedFS: 142
                 }
             },
@@ -211,8 +201,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cronStones: 840,                             // 840 cron stones for IV->V
                 enhancementData: {
                     baseChance: 1.910,
-                    softcap: { fs: 357, chance: 70.10 },
-                    hardcap: { fs: 878, chance: 90 },
                     recommendedFS: 161
                 }
             },
@@ -221,8 +209,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cronStones: 1090,                             // 1090 cron stones for V->VI
                 enhancementData: {
                     baseChance: 1.290,
-                    softcap: { fs: 533, chance: 70.05 },
-                    hardcap: { fs: 1307, chance: 90 },
                     recommendedFS: 191
                 }
             },
@@ -231,8 +217,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cronStones: 1480,                             // 1480 cron stones for VI->VII
                 enhancementData: {
                     baseChance: 0.880,
-                    softcap: { fs: 786, chance: 70.05 },
-                    hardcap: { fs: 1920, chance: 90 },
                     recommendedFS: 225
                 }
             },
@@ -241,8 +225,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cronStones: 1880,                             // 1880 cron stones for VII->VIII
                 enhancementData: {
                     baseChance: 0.570,
-                    softcap: { fs: 1219, chance: 69.54 },
-                    hardcap: { fs: 2969, chance: 90 },
                     recommendedFS: 272
                 }
             },
@@ -251,8 +233,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cronStones: 2850,                             // 2850 cron stones for VIII->IX
                 enhancementData: {
                     baseChance: 0.320,
-                    softcap: { fs: 2178, chance: 70.02 },
-                    hardcap: { fs: 5300, chance: 90 },
                     recommendedFS: 314
                 }
             },
@@ -261,8 +241,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cronStones: 3650,                             // 3650 cron stones for IX->X
                 enhancementData: {
                     baseChance: 0.172,
-                    softcap: { fs: 4060, chance: 70.00 },
-                    hardcap: { fs: 9872, chance: 90 },
                     recommendedFS: 316
                 }
             },
@@ -276,18 +254,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cronStones: 0,                               // No cron stones needed for BASE->I
                 enhancementData: {
                     baseChance: 8.550,
-                    softcap: { fs: 72, chance: 70.11 },
-                    hardcap: { fs: 189, chance: 90 },
                     recommendedFS: 48
                 }
             },
             'I': { 
                 materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for I->II
-                cronStones: 320,                              // 320 cron stones for I->II
+                cronStones: 320,                               // 320 cron stones for I->II
                 enhancementData: {
                     baseChance: 4.120,
-                    softcap: { fs: 160, chance: 70.04 },
-                    hardcap: { fs: 403, chance: 90 },
                     recommendedFS: 66
                 }
             },
@@ -296,8 +270,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cronStones: 560,                              // 560 cron stones for II->III
                 enhancementData: {
                     baseChance: 2.000,
-                    softcap: { fs: 340, chance: 70.00 },
-                    hardcap: { fs: 840, chance: 90 },
                     recommendedFS: 106
                 }
             },
@@ -306,8 +278,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cronStones: 780,                              // 780 cron stones for III->IV
                 enhancementData: {
                     baseChance: 0.910,
-                    softcap: { fs: 760, chance: 70.07 },
-                    hardcap: { fs: 1855, chance: 90 },
                     recommendedFS: 191
                 }
             },
@@ -316,8 +286,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cronStones: 970,                              // 970 cron stones for IV->V
                 enhancementData: {
                     baseChance: 0.469,
-                    softcap: { fs: 1483, chance: 70.02 },
-                    hardcap: { fs: 3613, chance: 90 },
                     recommendedFS: 234
                 }
             },
@@ -326,8 +294,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cronStones: 1350,                             // 1350 cron stones for V->VI
                 enhancementData: {
                     baseChance: 0.273,
-                    softcap: { fs: 2555, chance: 70.02 },
-                    hardcap: { fs: 6213, chance: 90 },
                     recommendedFS: 290
                 }
             },
@@ -336,8 +302,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cronStones: 1550,                             // 1550 cron stones for VI->VII
                 enhancementData: {
                     baseChance: 0.160,
-                    softcap: { fs: 4365, chance: 70.00 },
-                    hardcap: { fs: 10614, chance: 90 },
                     recommendedFS: 314
                 }
             },
@@ -346,8 +310,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cronStones: 2250,                             // 2250 cron stones for VII->VIII
                 enhancementData: {
                     baseChance: 0.107,
-                    softcap: { fs: 6502, chance: 70.00 },
-                    hardcap: { fs: 15801, chance: 90 },
                     recommendedFS: 316
                 }
             },
@@ -356,8 +318,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cronStones: 2760,                             // 2760 cron stones for VIII->IX
                 enhancementData: {
                     baseChance: 0.049,
-                    softcap: { fs: 14423, chance: 70.00 },
-                    hardcap: { fs: 35037, chance: 90 },
                     recommendedFS: 346
                 }
             },
@@ -366,8 +326,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cronStones: 3920,                             // 3920 cron stones for IX->X
                 enhancementData: {
                     baseChance: 0.024,
-                    softcap: { fs: 28916, chance: 70.00 },
-                    hardcap: { fs: 70227, chance: 90 },
                     recommendedFS: 346
                 }
             },
@@ -385,8 +343,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cronStones: 0,                               // No cron stones needed for BASE->I
                 enhancementData: {
                     baseChance: 2.000,
-                    softcap: { fs: 340, chance: 70.00 },
-                    hardcap: { fs: 840, chance: 90 },
                     recommendedFS: 76
                 }
             },
@@ -399,8 +355,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cronStones: 1500,                             // 1500 cron stones for I->II
                 enhancementData: {
                     baseChance: 1.000,
-                    softcap: { fs: 690, chance: 70.00 },
-                    hardcap: { fs: 1690, chance: 90 },
                     recommendedFS: 142
                 }
             },
@@ -413,8 +367,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cronStones: 2100,                             // 1800 cron stones for II->III
                 enhancementData: {
                     baseChance: 0.500,
-                    softcap: { fs: 1390, chance: 70.00 },
-                    hardcap: { fs: 3390, chance: 90 },
                     recommendedFS: 272
                 }
             },
@@ -427,8 +379,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 cronStones: 2700,                             // 2500 cron stones for III->IV
                 enhancementData: {
                     baseChance: 0.200,
-                    softcap: { fs: 3490, chance: 70.00 },
-                    hardcap: { fs: 8489, chance: 90 },
                     recommendedFS: 314
                 }
             },
@@ -440,9 +390,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 ],    
                 cronStones: 4000,                             // 3200 cron stones for IV->V
                 enhancementData: {
-                    baseChance: 0.003,
-                    softcap: { fs: 279990, chance: 70.00 },
-                    hardcap: { fs: 679890, chance: 90 },
+                    baseChance: 0.0025,
                     recommendedFS: 346
                 }
             }
@@ -549,38 +497,49 @@ document.addEventListener('DOMContentLoaded', async function() {
      * @returns {number} - The success chance percentage
      */
     function calculateSuccessChance(item, level, failstack) {
-        // Get enhancement data for the item and level from the unified structure
-        // If the item or level doesn't exist, use default values
         const defaultData = {
             baseChance: 2,
-            softcap: { fs: 100, chance: 40 },
-            hardcap: { fs: 220, chance: 90 },
             recommendedFS: 50
         };
-        
-        // Get the item's data or default to an empty object
         const itemData = enhancementItemRequirements[item] || {};
-        
-        // Get the level's data or default to an empty object
         const levelData = (itemData[level] && itemData[level].enhancementData) || defaultData;
-        
-        let successChance;
-        
-        // Calculate success chance based on failstack using BDO formulas
-        if (failstack <= levelData.softcap.fs) {
-            // Before softcap: linear interpolation between base chance and softcap chance
-            const fsRatio = failstack / levelData.softcap.fs;
-            successChance = levelData.baseChance + fsRatio * (levelData.softcap.chance - levelData.baseChance);
-        } else if (failstack >= levelData.hardcap.fs) {
-            // At or beyond hardcap: use hardcap chance (maximum)
-            successChance = levelData.hardcap.chance;
-        } else {
-            // Between softcap and hardcap: linear interpolation between softcap chance and hardcap chance
-            const fsRatio = (failstack - levelData.softcap.fs) / (levelData.hardcap.fs - levelData.softcap.fs);
-            successChance = levelData.softcap.chance + fsRatio * (levelData.hardcap.chance - levelData.softcap.chance);
-        }
+        const baseRate = levelData.baseChance;
+        const successChance = Math.min(baseRate + (failstack * baseRate / 10), 90);
         
         return successChance;
+    }
+    
+    /**
+     * Calculates the exact average number of attempts needed with dynamic failstack increments
+     * @param {number} baseRate - The base success rate percentage
+     * @param {number} initialFailstack - The starting failstack value
+     * @returns {number} - The exact average number of attempts needed
+     */
+    function calculateExactAverageAttempts(baseRate, initialFailstack) {
+        if (baseRate === 0) return 0;
+
+        const MAX_ATTEMPTS = 100000;
+        let limit = MAX_ATTEMPTS;
+
+        // E[a]: expected attempts if we've already tried "a" times (so, current attempt = a+1)
+        // failstack increases by a
+        const E = new Array(limit + 2).fill(0);
+
+        // If we reach pity cap, succeed on next attempt
+        E[limit] = 1;
+
+        for (let a = limit - 1; a >= 0; a--) {
+            // failstack increases with every attempt
+            const fs = initialFailstack + a;
+            const P = Math.min(baseRate + (fs * baseRate / 10), 100) / 100;
+            if (P >= 1) {
+                E[a] = 1;
+            } else {
+                E[a] = 1 + (1 - P) * E[a + 1];
+            }
+        }
+
+        return E[0];
     }
     
     /**
@@ -600,7 +559,6 @@ document.addEventListener('DOMContentLoaded', async function() {
      * @returns {Promise<Object>} - The total cost and details of the attempt
      */
     async function calculateAttemptCost(item, level, useCron, useMemFrags) {
-        // Check if we have requirements for this item and level
         const requirements = enhancementItemRequirements[item]?.[level];
         
         // Calculate materials cost
@@ -635,11 +593,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             const cronCount = requirements.cronStones || 0;
             let cronPrice;
             
-            // Check which type of cron stones we're using
             if (useCostumeCronCheckbox && useCostumeCronCheckbox.checked) {
-                cronPrice = 2185297; // Costume cron price
+                cronPrice = 2185297;
             } else {
-                cronPrice = 3000000; // Regular cron price (3 million per cron stone)
+                cronPrice = 3000000; 
             }
             
             cronCost = cronCount * cronPrice;
@@ -650,14 +607,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         let memFragsCost = 0;
         let memFragsCount = 0;
         if (useMemFrags && requirements) {
-            // Durability is lost on EVERY enhancement attempt (even with cron stones)
-            // Get durability loss from the item level instead of the enhancement level
+           
             const durabilityLoss = enhancementItemRequirements[item]?.durabilityLoss || 0;
-            
-            // Get how many durability points each memory fragment restores
             const memFragPerDurability = enhancementItemRequirements[item]?.memFragPerDurability || 1;
-            
-            // Calculate number of memory fragments needed based on recovery rate
             memFragsCount = Math.ceil(durabilityLoss / memFragPerDurability);
             
             try {
@@ -666,14 +618,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 console.log(`Adding memory fragment cost: ${memFragsCount} frags at ${memFragPrice.toLocaleString()} each = ${memFragsCost.toLocaleString()}`);
             } catch (error) {
                 console.error(`Error fetching price for memory fragments:`, error);
-                // Use default price if there's an error
                 const defaultPrice = marketPrices[currentRegion][44195] || 0;
                 memFragsCost = defaultPrice * memFragsCount;
             }
         }
         
         // Total cost for this attempt 
-        const totalCost = materialsCost + cronCost;
+        const totalCost = materialsCost + cronCost + memFragsCost;
         console.log(`Total attempt cost for ${item} ${level}: ${totalCost.toLocaleString()} (materials: ${materialsCost.toLocaleString()}, cron: ${cronCost.toLocaleString()}, memory frags: ${memFragsCost.toLocaleString()})`);
         
         // Return cost details
@@ -1021,12 +972,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         const successChancesArray = [];
         const expectedAttemptsArray = [];
         const costPerLevelArray = [];
+        const materialsCostArray = [];
         const memFragsCostArray = [];
         const memFragsCountArray = [];
         const cronCostArray = [];
         const cronStoneCountArray = [];
-        const usedSimulationArray = [];
-        const failstacksAddedArray = [];
         let totalAttempts = 0;
         let totalCostValue = 0;
         let totalMemFragsCost = 0;
@@ -1057,58 +1007,21 @@ document.addEventListener('DOMContentLoaded', async function() {
             const successChance = calculateSuccessChance(item, currentLevel, fs);
             const failChance = 100 - successChance; // The chance of failure
             
-            // Calculate expected attempts (100/success rate for percentage to attempts conversion)
-            let expectedAttempts = 100 / successChance;
+            // Get the base chance for this item level to calculate exact attempts when using cron stones
+            const baseChance = enhancementItemRequirements[item]?.[currentLevel]?.enhancementData?.baseChance || 0;
             
-            // Apply dynamic failstack increments when using cron stones
-            // This simulates the natural failstack build-up that would occur with failed attempts
+            // Calculate expected attempts
+            let expectedAttempts = 0;
+            let rawAttempts = 100 / successChance; // Standard attempt calculation
+            
+            // Use exact calculation when cron stones are selected
             if (useCronForThisLevel) {
-                // Create a copy of the original failstack to work with
-                let simulatedFS = fs;
-                let remainingFailedAttempts = Math.floor(expectedAttempts - 1); // -1 because the last attempt succeeds
-                let totalFSAdded = 0;
-                
-                // Get the base chance for this item level to determine how to handle failstack increments
-                const baseChance = enhancementItemRequirements[item]?.[currentLevel]?.enhancementData?.baseChance || 0;
-                
-                // For extremely low base chance items (like Fallen God IV->V with 0.003%), we need special handling
-                // to avoid getting trapped in an ineffective loop
-                const fsLimit = baseChance < 0.01 ? 8000 : 100; // Higher limit for very rare enhancements
-                
-        
-                
-             
-                while (remainingFailedAttempts > 0 && totalFSAdded < fsLimit) { 
-                        // Increment failstack by 1
-                        simulatedFS += 1;
-                        totalFSAdded += 1;
-                        
-                        // Recalculate success chance with the new failstack
-                        const newSuccessChance = calculateSuccessChance(item, currentLevel, simulatedFS);
-                        const newExpectedAttempts = 100 / newSuccessChance;
-                        
-                        // Since we've already "used up" one failed attempt to gain this failstack,
-                        // we need to subtract 1 from our remaining failed attempts
-                        remainingFailedAttempts = Math.floor(newExpectedAttempts - 1) - totalFSAdded;
-                        
-                        // Update when we've made significant progress
-                        if (Math.floor(newExpectedAttempts) <= Math.floor(expectedAttempts - remainingFailedAttempts)) {
-                            // Update our expected attempts and success chance
-                            expectedAttempts = newExpectedAttempts;
-                            // Also update the failstack that we're "actually" using for this level
-                            failstacks[index] = simulatedFS;
-                            console.log(`Level ${currentLevel}: Added ${totalFSAdded} failstacks, now using FS: ${simulatedFS} with ${expectedAttempts.toFixed(2)} expected attempts`);
-                        }
-                    }
-                    
-                    // Flag that we're using regular increments for this level
-                    usedSimulationArray[index] = false;
-                    
-                    // Store how many failstacks we added through regular increments
-                    if (totalFSAdded > 0) {
-                        failstacksAddedArray[index] = totalFSAdded;
-                    }
-                
+                // Calculate exact average attempts with dynamic failstack increments
+                expectedAttempts = calculateExactAverageAttempts(baseChance, fs);
+                console.log(`Level ${currentLevel}: Using exact calculation with base rate ${baseChance} and initial FS ${fs}, result: ${expectedAttempts.toFixed(2)} attempts`);
+            } else {
+                // Use standard calculation when not using cron stones
+                expectedAttempts = rawAttempts;
             }
             
             // Get the cost for this attempt (asynchronously) - use cron based on per-level decision
@@ -1230,6 +1143,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 } else {
                     // First level enhancement can't be downgraded below start level
                     levelCost = costDetails.totalCost * expectedAttempts;
+                    // Store materials cost separately
+                    const materialsCost = costDetails.materialsCost * expectedAttempts;
                     
                     // Calculate memory fragment costs for failures at this level
                     if (useMemFrags) {
@@ -1240,6 +1155,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             } else {
                 // With cron stones, no downgrades occur but durability is still lost
                 levelCost = costDetails.totalCost * expectedAttempts;
+                // Store materials cost separately
+                const materialsCost = costDetails.materialsCost * expectedAttempts;
                 
                 // Store cron stone details
                 const cronCost = costDetails.cronCost * expectedAttempts;
@@ -1258,6 +1175,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Store the direct attempts for this level with more precision
             // This is the number of attempts needed just for this level, without considering any downgrades
             expectedAttemptsArray.push(expectedAttempts.toFixed(2));
+            
+            // Store raw attempts calculation for display purposes
+            if (!window.rawAttemptsArray) {
+                window.rawAttemptsArray = [];
+            }
+            // Ensure we have an entry for this index
+            while (window.rawAttemptsArray.length <= index) {
+                window.rawAttemptsArray.push(0);
+            }
+            window.rawAttemptsArray[index] = rawAttempts.toFixed(2);
             
             // For total attempts calculation, we need to consider all attempts including recovery attempts
             let totalAttemptsForThisLevel = expectedAttempts;
@@ -1306,6 +1233,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             totalAttempts += totalAttemptsForThisLevel;
             costPerLevelArray.push(levelCost);
             totalCostValue += levelCost;
+            
+            // Calculate and store material costs (base materials only, not cron or memory fragments)
+            const materialsCost = costDetails.materialsCost * (useCronForThisLevel ? expectedAttempts : (expectedAttempts - 1 + 1)); // All attempts need materials
+            materialsCostArray.push(materialsCost);
+            
             memFragsCostArray.push(levelMemFragsCost);
             memFragsCountArray.push(levelMemFragsCount);
             totalMemFragsCost += levelMemFragsCost;
@@ -1337,19 +1269,28 @@ document.addEventListener('DOMContentLoaded', async function() {
         // are already included in the levelCost calculations
         let finalTotalCost = totalCostValue;
         
+        // Calculate total material cost
+        let totalMaterialCost = 0;
+        for (let i = 0; i < materialsCostArray.length; i++) {
+            totalMaterialCost += materialsCostArray[i];
+        }
+        
         // Return the calculated results
         return {
             item: item,
             startLevel: startLevel,
             targetLevel: targetLevel,
             totalCost: Math.round(finalTotalCost), // Already includes memory fragment costs from each level's calculation
+            totalMaterialCost: Math.round(totalMaterialCost), // Total cost of materials only
             attemptsPrediction: parseFloat(totalAttempts.toFixed(2)),
             failstackUsage: failstacks,
             originalFailstacks: originalFailstacks, // Store the original failstack values before any increments
             successChances: successChancesArray,
             expectedAttempts: expectedAttemptsArray,
+            rawAttempts: window.rawAttemptsArray || [],
             recoveryAttempts: window.recoveryAttemptsArray || [],
             costPerLevel: costPerLevelArray,
+            materialsCost: materialsCostArray,
             memFragsCost: memFragsCostArray,
             totalMemFragsCost: Math.round(totalMemFragsCost),
             memFragsCount: memFragsCountArray,
@@ -1360,9 +1301,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             totalCronCount: Math.round(totalCronCount),
             includeMemFrags: useMemFrags,
             useCronStones: useCron,
-            useCronPerLevel: useCronPerLevelArray, // Track which levels used cron stones
-            usedSimulation: usedSimulationArray, // Track which levels used simulation
-            failstacksAdded: failstacksAddedArray // Track how many failstacks were added in simulation
+            useCronPerLevel: useCronPerLevelArray // Track which levels used cron stones
         };
     }
     
@@ -1396,6 +1335,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Global cron stones enabled (either regular or costume)
             if ((useCronCheckbox && useCronCheckbox.checked) || (useCostumeCronCheckbox && useCostumeCronCheckbox.checked)) {
                 costBreakdown.innerHTML = 
+                    `• <strong>Material Cost:</strong> ${Math.round(results.totalMaterialCost).toLocaleString()} Silver<br>` +
                     `• <strong>Cron Stones:</strong> ${Math.round(results.totalCronCount).toLocaleString()} stones (${Math.round(results.totalCronCost).toLocaleString()} Silver)`;
             } 
             // Only first level cron stones (protection from downgrade below starting level)
@@ -1410,6 +1350,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 
                 if (directEnhancementCronCount > 0 || recoveryCronCount > 0) {
                     costBreakdown.innerHTML = 
+                        `• <strong>Material Cost:</strong> ${Math.round(results.totalMaterialCost).toLocaleString()} Silver<br>` +
                         `• <strong>Total Cron Stone Usage:</strong> ${Math.round(results.totalCronCount).toLocaleString()} stones (${Math.round(results.totalCronCost).toLocaleString()} Silver)`;
                     
                     // Add breakdown of direct vs recovery cron usage
@@ -1434,7 +1375,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         } 
         // No cron stones used at all
         else if (results.includeMemFrags) {
-            costBreakdown.innerHTML = `• <strong>Memory Fragments:</strong> ${Math.round(results.totalMemFragsCount).toLocaleString()} fragments (${Math.round(results.totalMemFragsCost).toLocaleString()} Silver)`;
+            costBreakdown.innerHTML = 
+                `• <strong>Material Cost:</strong> ${Math.round(results.totalMaterialCost).toLocaleString()} Silver<br>` +
+                `• <strong>Memory Fragments:</strong> ${Math.round(results.totalMemFragsCount).toLocaleString()} fragments (${Math.round(results.totalMemFragsCost).toLocaleString()} Silver)`;
             costInfo.appendChild(costBreakdown);
         }
         
@@ -1523,13 +1466,18 @@ document.addEventListener('DOMContentLoaded', async function() {
             detailContent += `Success Chance: ${parseFloat(results.successChances[i]).toFixed(3)}%, `;
                                 
             // Add direct attempts info with raw calculation
-            const rawAttempts = (100/parseFloat(results.successChances[i])).toFixed(2);
+            const rawAttempts = results.rawAttempts[i] || (100/parseFloat(results.successChances[i])).toFixed(2);
             
-            // Check if this is a low success rate item with failstack optimization
-            if (results.expectedAttempts[i] && results.usedSimulation && results.usedSimulation[i]) {
-                detailContent += `<span style="font-weight: bold;">Direct Attempts: ${results.expectedAttempts[i]}</span> <span style="color: #3498db;">(Optimized with ${results.failstacksAdded[i] || 0} failstacks gained)</span>`;
+            // Check if cron stones are used
+            const usingCron = (useCronCheckbox && useCronCheckbox.checked) || (useCostumeCronCheckbox && useCostumeCronCheckbox.checked);
+            
+            // Display direct attempts
+            if (usingCron) {
+                // When using cron stones, show exact calculation with failstack increments
+                detailContent += `<span style="font-weight: bold;">Direct Attempts: ${results.expectedAttempts[i]}</span> <span style="color: #3498db;">(with +FS increments)</span> <span style="color: #777;">(${rawAttempts} raw)</span>`;
             } else {
-                detailContent += `<span style="font-weight: bold;">Direct Attempts: ${results.expectedAttempts[i]}</span> (${rawAttempts} raw)`;
+                // When not using cron stones, just show standard calculation
+                detailContent += `<span style="font-weight: bold;">Direct Attempts: ${results.expectedAttempts[i]}</span>`;
             }
             
             // Add recovery attempts if not using cron and recovery attempts exist
@@ -1541,7 +1489,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 detailContent += `, <span style="font-weight: bold;">Total: ${totalForLevel.toFixed(2)}</span>`;
             }
             
-            detailContent += `, Cost: ${Math.round(results.costPerLevel[i]).toLocaleString()} Silver`;
+            detailContent += `, Total Cost: ${Math.round(results.costPerLevel[i]).toLocaleString()} Silver`;
+            
+            // Show the material cost
+            detailContent += `<br><span style="margin-left: 15px; color: #2980b9;">• Material Cost: ${Math.round(results.materialsCost[i]).toLocaleString()} Silver</span>`;
             
             // Add cron stone cost details if cron stones are used for this level
             if (results.useCronPerLevel && results.useCronPerLevel[i] && results.cronCost && results.cronCost[i] > 0) {
