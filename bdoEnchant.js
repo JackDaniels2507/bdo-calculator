@@ -1014,6 +1014,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Calculator function
     async function calculateEnchantment(item, startLevel, targetLevel, failstacks) {
+        // Store original failstack values before any modifications
+        const originalFailstacks = [...failstacks];
+        
         // Arrays to store results
         const successChancesArray = [];
         const expectedAttemptsArray = [];
@@ -1022,6 +1025,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         const memFragsCountArray = [];
         const cronCostArray = [];
         const cronStoneCountArray = [];
+        const usedSimulationArray = [];
+        const failstacksAddedArray = [];
         let totalAttempts = 0;
         let totalCostValue = 0;
         let totalMemFragsCost = 0;
@@ -1054,6 +1059,57 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             // Calculate expected attempts (100/success rate for percentage to attempts conversion)
             let expectedAttempts = 100 / successChance;
+            
+            // Apply dynamic failstack increments when using cron stones
+            // This simulates the natural failstack build-up that would occur with failed attempts
+            if (useCronForThisLevel) {
+                // Create a copy of the original failstack to work with
+                let simulatedFS = fs;
+                let remainingFailedAttempts = Math.floor(expectedAttempts - 1); // -1 because the last attempt succeeds
+                let totalFSAdded = 0;
+                
+                // Get the base chance for this item level to determine how to handle failstack increments
+                const baseChance = enhancementItemRequirements[item]?.[currentLevel]?.enhancementData?.baseChance || 0;
+                
+                // For extremely low base chance items (like Fallen God IV->V with 0.003%), we need special handling
+                // to avoid getting trapped in an ineffective loop
+                const fsLimit = baseChance < 0.01 ? 8000 : 100; // Higher limit for very rare enhancements
+                
+        
+                
+             
+                while (remainingFailedAttempts > 0 && totalFSAdded < fsLimit) { 
+                        // Increment failstack by 1
+                        simulatedFS += 1;
+                        totalFSAdded += 1;
+                        
+                        // Recalculate success chance with the new failstack
+                        const newSuccessChance = calculateSuccessChance(item, currentLevel, simulatedFS);
+                        const newExpectedAttempts = 100 / newSuccessChance;
+                        
+                        // Since we've already "used up" one failed attempt to gain this failstack,
+                        // we need to subtract 1 from our remaining failed attempts
+                        remainingFailedAttempts = Math.floor(newExpectedAttempts - 1) - totalFSAdded;
+                        
+                        // Update when we've made significant progress
+                        if (Math.floor(newExpectedAttempts) <= Math.floor(expectedAttempts - remainingFailedAttempts)) {
+                            // Update our expected attempts and success chance
+                            expectedAttempts = newExpectedAttempts;
+                            // Also update the failstack that we're "actually" using for this level
+                            failstacks[index] = simulatedFS;
+                            console.log(`Level ${currentLevel}: Added ${totalFSAdded} failstacks, now using FS: ${simulatedFS} with ${expectedAttempts.toFixed(2)} expected attempts`);
+                        }
+                    }
+                    
+                    // Flag that we're using regular increments for this level
+                    usedSimulationArray[index] = false;
+                    
+                    // Store how many failstacks we added through regular increments
+                    if (totalFSAdded > 0) {
+                        failstacksAddedArray[index] = totalFSAdded;
+                    }
+                
+            }
             
             // Get the cost for this attempt (asynchronously) - use cron based on per-level decision
             const costDetails = await calculateAttemptCost(
@@ -1289,6 +1345,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             totalCost: Math.round(finalTotalCost), // Already includes memory fragment costs from each level's calculation
             attemptsPrediction: parseFloat(totalAttempts.toFixed(2)),
             failstackUsage: failstacks,
+            originalFailstacks: originalFailstacks, // Store the original failstack values before any increments
             successChances: successChancesArray,
             expectedAttempts: expectedAttemptsArray,
             recoveryAttempts: window.recoveryAttemptsArray || [],
@@ -1303,7 +1360,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             totalCronCount: Math.round(totalCronCount),
             includeMemFrags: useMemFrags,
             useCronStones: useCron,
-            useCronPerLevel: useCronPerLevelArray // Track which levels used cron stones
+            useCronPerLevel: useCronPerLevelArray, // Track which levels used cron stones
+            usedSimulation: usedSimulationArray, // Track which levels used simulation
+            failstacksAdded: failstacksAddedArray // Track how many failstacks were added in simulation
         };
     }
     
@@ -1446,12 +1505,32 @@ document.addEventListener('DOMContentLoaded', async function() {
             const formattedNextLevel = formatEnhancementLevel(nextLevel);
             
             // Create detail item with formatted content
-            let detailContent = `<strong>${formattedCurrentLevel} → ${formattedNextLevel}:</strong> ` +
-                                `Failstack: ${results.failstackUsage[i]}, ` +
-                                `Success Chance: ${parseFloat(results.successChances[i]).toFixed(3)}%, `;
+            let detailContent = `<strong>${formattedCurrentLevel} → ${formattedNextLevel}:</strong> `;
+            
+            // Check if the original failstack was different than the current one
+            // This happens when automatic failstack increment is applied with cron stones
+            if ((useCronCheckbox && useCronCheckbox.checked) || (useCostumeCronCheckbox && useCostumeCronCheckbox.checked)) {
+                const origFS = results.originalFailstacks[i];
+                if (origFS !== results.failstackUsage[i]) {
+                    detailContent += `Failstack: <span style="text-decoration: line-through;">${origFS}</span> → <span style="color: green; font-weight: bold;">${results.failstackUsage[i]}</span>, `;
+                } else {
+                    detailContent += `Failstack: ${results.failstackUsage[i]}, `;
+                }
+            } else {
+                detailContent += `Failstack: ${results.failstackUsage[i]}, `;
+            }
+            
+            detailContent += `Success Chance: ${parseFloat(results.successChances[i]).toFixed(3)}%, `;
                                 
             // Add direct attempts info with raw calculation
-            detailContent += `<span style="font-weight: bold;">Direct Attempts: ${results.expectedAttempts[i]}</span> (${(100/parseFloat(results.successChances[i])).toFixed(2)} raw)`;
+            const rawAttempts = (100/parseFloat(results.successChances[i])).toFixed(2);
+            
+            // Check if this is a low success rate item with failstack optimization
+            if (results.expectedAttempts[i] && results.usedSimulation && results.usedSimulation[i]) {
+                detailContent += `<span style="font-weight: bold;">Direct Attempts: ${results.expectedAttempts[i]}</span> <span style="color: #3498db;">(Optimized with ${results.failstacksAdded[i] || 0} failstacks gained)</span>`;
+            } else {
+                detailContent += `<span style="font-weight: bold;">Direct Attempts: ${results.expectedAttempts[i]}</span> (${rawAttempts} raw)`;
+            }
             
             // Add recovery attempts if not using cron and recovery attempts exist
             if (!((useCronCheckbox && useCronCheckbox.checked) || (useCostumeCronCheckbox && useCostumeCronCheckbox.checked)) && results.recoveryAttempts && results.recoveryAttempts[i] > 0) {
@@ -1516,6 +1595,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         if ((useCronCheckbox && useCronCheckbox.checked) || (useCostumeCronCheckbox && useCostumeCronCheckbox.checked)) {
             let cronType = useCronCheckbox && useCronCheckbox.checked ? "Regular Cron Stones (3M silver per cron)" : "Costume Cron Stones (2,185,297 silver per cron)";
             note.innerHTML = `<strong>Note:</strong> These calculations include ${cronType} costs. Cron Stones prevent item downgrades but durability is still lost.<br>` +
+                           '<strong>Failstack Increments:</strong> When using cron stones, the calculator simulates automatic failstack increments that would naturally occur from failed attempts. This is why failstack values may be higher than what you entered.<br>' +
                            '<span style="color: #ff0000; font-weight: bold; font-size: 1.1em;">WARNING: Failstack cost is not counted!!!</span>';
         } else {
             note.innerHTML = '<strong>Note:</strong> These calculations include the cost of potential downgrades on failed attempts without Cron stones.<br>' +
