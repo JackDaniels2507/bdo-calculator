@@ -218,7 +218,97 @@ document.addEventListener('DOMContentLoaded', async function() {
             // X is the max level, no more enhancements
         },
         'Sovereign': {
-            // Sovereign will follow a similar pattern when data is available
+            'BASE': { 
+                materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for BASE->I
+                cronStones: 0,                               // No cron stones needed for BASE->I
+                enhancementData: {
+                    baseChance: 15.000,
+                    softcap: { fs: 30, chance: 70.00 },
+                    hardcap: { fs: 90, chance: 90 }
+                }
+            },
+            'I': { 
+                materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for I->II
+                cronStones: 320,                              // 320 cron stones for I->II
+                enhancementData: {
+                    baseChance: 7.000,
+                    softcap: { fs: 80, chance: 70.00 },
+                    hardcap: { fs: 220, chance: 90 }
+                }
+            },
+            'II': { 
+                materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for II->III
+                cronStones: 560,                              // 560 cron stones for II->III
+                enhancementData: {
+                    baseChance: 4.500,
+                    softcap: { fs: 140, chance: 70.00 },
+                    hardcap: { fs: 350, chance: 90 }
+                }
+            },
+            'III': { 
+                materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for III->IV
+                cronStones: 780,                              // 780 cron stones for III->IV
+                enhancementData: {
+                    baseChance: 2.800,
+                    softcap: { fs: 230, chance: 70.00 },
+                    hardcap: { fs: 570, chance: 90 }
+                }
+            },
+            'IV': { 
+                materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for IV->V
+                cronStones: 970,                              // 970 cron stones for IV->V
+                enhancementData: {
+                    baseChance: 1.900,
+                    softcap: { fs: 350, chance: 70.00 },
+                    hardcap: { fs: 870, chance: 90 }
+                }
+            },
+            'V': { 
+                materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for V->VI
+                cronStones: 1350,                             // 1350 cron stones for V->VI
+                enhancementData: {
+                    baseChance: 1.250,
+                    softcap: { fs: 530, chance: 70.00 },
+                    hardcap: { fs: 1300, chance: 90 }
+                }
+            },
+            'VI': { 
+                materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for VI->VII
+                cronStones: 1550,                             // 1550 cron stones for VI->VII
+                enhancementData: {
+                    baseChance: 0.850,
+                    softcap: { fs: 780, chance: 70.00 },
+                    hardcap: { fs: 1900, chance: 90 }
+                }
+            },
+            'VII': { 
+                materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for VII->VIII
+                cronStones: 2250,                             // 2250 cron stones for VII->VIII
+                enhancementData: {
+                    baseChance: 0.550,
+                    softcap: { fs: 1200, chance: 70.00 },
+                    hardcap: { fs: 2950, chance: 90 }
+                }
+            },
+            'VIII': { 
+                materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for VIII->IX
+                cronStones: 2760,                             // 2760 cron stones for VIII->IX
+                enhancementData: {
+                    baseChance: 0.300,
+                    softcap: { fs: 2150, chance: 70.00 },
+                    hardcap: { fs: 5250, chance: 90 }
+                }
+            },
+            'IX': { 
+                materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for IX->X
+                cronStones: 3920,                             // 3920 cron stones for IX->X
+                enhancementData: {
+                    baseChance: 0.170,
+                    softcap: { fs: 4000, chance: 70.00 },
+                    hardcap: { fs: 9800, chance: 90 }
+                }
+            },
+            // X is the max level, no more enhancements
         },
         'Fallen God\'s Armor': {
             // Fallen God's Armor will follow a similar pattern when data is available
@@ -228,7 +318,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Item name mapping for better display
     const itemNames = {
         820979: "Essence of Dawn",
-        820984: "DAWN"
+        820984: "DAWN",
+        820934: "Primordial Black Stone"
     };
     
     // Market prices with built-in defaults
@@ -239,12 +330,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             820979: 83000000, // 83 million silver based on example
             // DAWN (special item that won't be fetched from the market)
             820984: 30000000, // 30 million silver fixed price
+            // Primordial Black Stone
+            820934: 50000000, // 50 million silver based on provided default
         },
         'NA': {
             // Essence of Dawn with a small price variation for NA
             820979: 83000000,
             // DAWN (special item that won't be fetched from the market)
             820984: 30000000, // 30 million silver fixed price
+            // Primordial Black Stone
+            820934: 50000000, // 50 million silver based on provided default
         }
     };
     

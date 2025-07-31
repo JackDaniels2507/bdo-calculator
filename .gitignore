@@ -1,0 +1,24 @@
+# BDO price files
+bdo-prices-eu.json
+bdo-prices-na.json
+
+# Node modules if you're using npm
+node_modules/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor directories and files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

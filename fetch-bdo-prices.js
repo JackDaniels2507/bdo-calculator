@@ -6,6 +6,7 @@ const https = require('https');
 const itemIds = {
     'Essence of Dawn': 820979,  // Essence of Dawn ID
     'DAWN': 820984,            // DAWN ID
+    'Primordial Black Stone': 820934, // Primordial Black Stone ID
     // Add more items as needed
 };
 
