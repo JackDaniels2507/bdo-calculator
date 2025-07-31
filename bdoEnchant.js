@@ -995,23 +995,61 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // The expected number of downgrades per success
                 const expectedDowngrades = failChance / successChance;
                 
-                // For each downgrade, we need to re-enhance from the previous level
-                // This creates a cascading cost effect
+                // We need to calculate the full cost of bringing an item back up after downgrade
                 if (index > 0) {
-                    // Cost to re-enhance from previous level
-                    const prevLevel = levels[startIndex + index - 1];
-                    const reEnhanceCostDetails = await calculateAttemptCost(item, prevLevel, useCron, useMemFrags);
+                    // Cost of the current level attempts
+                    const currentLevelAttemptCost = costDetails.totalCost * expectedAttempts;
                     
-                    // Calculate success chance for the previous level
-                    const prevFS = failstacks[index - 1];  // Use the failstack from the previous level
-                    const prevSuccessChance = calculateSuccessChance(item, prevLevel, prevFS);
+                    // Calculate the complete cost to recover from a downgrade
+                    // This includes all the costs of re-enhancing from all previous levels
+                    let downgradeCost = 0;
+                    let downgradedMemFragsCost = 0;
+                    let downgradedMemFragsCount = 0;
                     
-                    // Expected attempts needed to re-enhance from previous level
-                    const prevExpectedAttempts = 100 / prevSuccessChance;
+                    // If we fail and downgrade to the previous level, we need to calculate
+                    // the cost of getting back to the current level
+                    let recoveryCostMultiplier = expectedDowngrades; // How many times we expect to recover
                     
-                    // Total cost to re-enhance = cost per attempt × expected attempts × expected downgrades
-                    const downgradeCost = reEnhanceCostDetails.totalCost * prevExpectedAttempts * expectedDowngrades;
-                    levelCost = (costDetails.totalCost * expectedAttempts) + downgradeCost;
+                    // Build an array of all previous levels that need re-enhancement
+                    const previousLevels = [];
+                    for (let prevIdx = 0; prevIdx < index; prevIdx++) {
+                        const lvl = levels[startIndex + prevIdx];
+                        const fs = failstacks[prevIdx];
+                        previousLevels.push({ level: lvl, failstack: fs });
+                    }
+                    
+                    // Calculate costs for each level we need to recover through
+                    for (let prevIdx = previousLevels.length - 1; prevIdx >= 0; prevIdx--) {
+                        const prevLevel = previousLevels[prevIdx].level;
+                        const prevFS = previousLevels[prevIdx].failstack;
+                        
+                        // Get cost of one attempt at this level
+                        const levelCostDetails = await calculateAttemptCost(item, prevLevel, useCron, useMemFrags);
+                        
+                        // Calculate success rate for this level
+                        const levelSuccessChance = calculateSuccessChance(item, prevLevel, prevFS);
+                        const levelExpectedAttempts = 100 / levelSuccessChance;
+                        
+                        // Total cost at this level considering how many times we need to go through it
+                        const levelTotalCost = levelCostDetails.totalCost * levelExpectedAttempts * recoveryCostMultiplier;
+                        downgradeCost += levelTotalCost;
+                        
+                        // If we're calculating memory fragment costs
+                        if (useMemFrags) {
+                            const levelMemCost = levelCostDetails.memFragsCost * levelExpectedAttempts * recoveryCostMultiplier;
+                            const levelMemCount = levelCostDetails.memFragsCount * levelExpectedAttempts * recoveryCostMultiplier;
+                            downgradedMemFragsCost += levelMemCost;
+                            downgradedMemFragsCount += levelMemCount;
+                        }
+                        
+                        // For the next lower level, we need to account for additional failures
+                        // at this level that cause further downgrades
+                        const levelFailRate = (100 - levelSuccessChance) / 100;
+                        recoveryCostMultiplier *= levelFailRate * levelExpectedAttempts;
+                    }
+                    
+                    // Total cost is current level attempts + downgrade recovery
+                    levelCost = currentLevelAttemptCost + downgradeCost;
                     
                     // Calculate memory fragment costs for failures
                     if (useMemFrags) {
@@ -1019,17 +1057,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                         const currentLevelMemFragsCost = costDetails.memFragsCost * (expectedAttempts - 1); // -1 because we succeed once
                         const currentLevelMemFragsCount = costDetails.memFragsCount * (expectedAttempts - 1);
                         
-                        // Memory fragments needed for previous level failures when re-enhancing
-                        const prevLevelMemFragsCost = reEnhanceCostDetails.memFragsCost * (prevExpectedAttempts - 1) * expectedDowngrades;
-                        const prevLevelMemFragsCount = reEnhanceCostDetails.memFragsCount * (prevExpectedAttempts - 1) * expectedDowngrades;
-                        
-                        levelMemFragsCost = currentLevelMemFragsCost + prevLevelMemFragsCost;
-                        levelMemFragsCount = currentLevelMemFragsCount + prevLevelMemFragsCount;
+                        levelMemFragsCost = currentLevelMemFragsCost + downgradedMemFragsCost;
+                        levelMemFragsCount = currentLevelMemFragsCount + downgradedMemFragsCount;
                     }
                     
-                    console.log(`Including downgrade cost for ${currentLevel}: ${downgradeCost.toLocaleString()}`);
-                    console.log(`  - ${expectedDowngrades.toFixed(2)} expected downgrades`);
-                    console.log(`  - ${prevExpectedAttempts.toFixed(2)} attempts to re-enhance per downgrade`);
+                    console.log(`Including complete downgrade recovery cost for ${currentLevel}: ${downgradeCost.toLocaleString()}`);
+                    console.log(`  - ${expectedDowngrades.toFixed(2)} expected initial downgrades`);
                 } else {
                     // First level enhancement can't be downgraded below start level
                     levelCost = costDetails.totalCost * expectedAttempts;
@@ -1054,8 +1087,55 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
             
+            // Store the direct attempts for this level with more precision
+            // This is the number of attempts needed just for this level, without considering any downgrades
             expectedAttemptsArray.push(expectedAttempts.toFixed(2));
-            totalAttempts += expectedAttempts;
+            
+            // For total attempts calculation, we need to consider all attempts including recovery attempts
+            let totalAttemptsForThisLevel = expectedAttempts;
+            
+            // If not using cron stones and we're not at base level, add recovery attempts
+            if (!useCron && currentLevel !== 'BASE' && index > 0) {
+                // Calculate recovery attempts from all previous levels
+                const expectedDowngrades = failChance / successChance;
+                let recoveryAttempts = 0;
+                
+                // For each downgrade, we need to calculate all the attempts needed to get back to this level
+                for (let prevIdx = 0; prevIdx < index; prevIdx++) {
+                    const prevLevel = levels[startIndex + prevIdx];
+                    const prevFS = failstacks[prevIdx];
+                    const prevSuccessChance = calculateSuccessChance(item, prevLevel, prevFS);
+                    const prevExpectedAttempts = 100 / prevSuccessChance;
+                    
+                    // If this is the immediate previous level
+                    if (prevIdx === index - 1) {
+                        recoveryAttempts += prevExpectedAttempts * expectedDowngrades;
+                    } else {
+                        // For earlier levels, we need to account for cascading downgrades
+                        // This is an approximation based on the probability of needing to recover through this level
+                        // The real calculation would be more complex with probability trees
+                        const cascadeFactor = Math.pow(0.85, index - prevIdx - 1); // Approximate falloff for deeper levels
+                        recoveryAttempts += prevExpectedAttempts * expectedDowngrades * cascadeFactor;
+                    }
+                }
+                
+                totalAttemptsForThisLevel += recoveryAttempts;
+                console.log(`For ${currentLevel}: Direct attempts: ${expectedAttempts.toFixed(2)}, Recovery attempts: ${recoveryAttempts.toFixed(2)}`);
+                
+                // Store the recovery attempts in a separate array for display
+                if (!window.recoveryAttemptsArray) {
+                    window.recoveryAttemptsArray = [];
+                }
+                
+                // Ensure we have an entry for this index
+                while (window.recoveryAttemptsArray.length <= index) {
+                    window.recoveryAttemptsArray.push(0);
+                }
+                
+                window.recoveryAttemptsArray[index] = recoveryAttempts;
+            }
+            
+            totalAttempts += totalAttemptsForThisLevel;
             costPerLevelArray.push(levelCost);
             totalCostValue += levelCost;
             memFragsCostArray.push(levelMemFragsCost);
@@ -1081,12 +1161,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             failstackUsage: failstacks,
             successChances: successChancesArray,
             expectedAttempts: expectedAttemptsArray,
+            recoveryAttempts: window.recoveryAttemptsArray || [],
             costPerLevel: costPerLevelArray,
             memFragsCost: memFragsCostArray,
             totalMemFragsCost: Math.round(totalMemFragsCost),
             memFragsCount: memFragsCountArray,
             totalMemFragsCount: Math.round(totalMemFragsCount),
-            includeMemFrags: useMemFrags
+            includeMemFrags: useMemFrags,
+            useCronStones: useCron
         };
     }
     
@@ -1110,11 +1192,45 @@ document.addEventListener('DOMContentLoaded', async function() {
         costInfo.innerHTML = `<strong>Estimated Total Cost:</strong> ${results.totalCost.toLocaleString()} Silver`
         
         const attemptsInfo = createElement('p', {}, '');
-        attemptsInfo.innerHTML = `<strong>Estimated Attempts:</strong> ${results.attemptsPrediction}`;
+        
+        // Show a different message based on whether cron stones are used
+        if (useCronCheckbox && useCronCheckbox.checked) {
+            attemptsInfo.innerHTML = `<strong>Estimated Total Attempts:</strong> ${results.attemptsPrediction}`;
+        } else {
+            // Calculate total direct and recovery attempts
+            let totalDirectAttempts = 0;
+            let totalRecoveryAttempts = 0;
+            
+            for (let i = 0; i < results.expectedAttempts.length; i++) {
+                totalDirectAttempts += parseFloat(results.expectedAttempts[i]);
+                totalRecoveryAttempts += results.recoveryAttempts && results.recoveryAttempts[i] 
+                    ? parseFloat(results.recoveryAttempts[i]) 
+                    : 0;
+            }
+            
+            attemptsInfo.innerHTML = `<strong>Overall Total Attempts:</strong> ${results.attemptsPrediction} <span style="font-size: 0.9em; color: #e74c3c; font-weight: bold;">(Includes all direct + recovery attempts)</span>`;
+            
+            // Add detailed breakdown of attempts
+            const attemptsBreakdown = createElement('div', {}, '');
+            attemptsBreakdown.style.marginLeft = '20px';
+            attemptsBreakdown.style.fontSize = '0.9em';
+            attemptsBreakdown.style.marginTop = '5px';
+            
+            attemptsBreakdown.innerHTML = 
+                `• <strong>Direct Attempts:</strong> ${totalDirectAttempts.toFixed(2)} <span style="color: #555;">(Initial enhancement attempts)</span><br>` +
+                `• <strong>Recovery Attempts:</strong> ${totalRecoveryAttempts.toFixed(2)} <span style="color: #e74c3c;">(Additional attempts after downgrades)</span>`;
+            
+            attemptsInfo.appendChild(attemptsBreakdown);
+        }
         
         const detailsTitle = createElement('h3', {}, 'Enhancement Details:');
         
         const detailsList = createElement('ul');
+        
+        // Add some CSS styling for better readability
+        detailsList.style.borderTop = '1px solid #ddd';
+        detailsList.style.marginTop = '10px';
+        detailsList.style.paddingTop = '10px';
         
         // Add elements to results div
         resultsDiv.appendChild(resultTitle);
@@ -1138,9 +1254,21 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Create detail item with formatted content
             let detailContent = `<strong>${formattedCurrentLevel} → ${formattedNextLevel}:</strong> ` +
                                 `Failstack: ${results.failstackUsage[i]}, ` +
-                                `Success Chance: ${parseFloat(results.successChances[i]).toFixed(3)}%, ` +
-                                `Expected Attempts: ${results.expectedAttempts[i]}, ` +
-                                `Cost: ${Math.round(results.costPerLevel[i]).toLocaleString()} Silver`;
+                                `Success Chance: ${parseFloat(results.successChances[i]).toFixed(3)}%, `;
+                                
+            // Add direct attempts info with raw calculation
+            detailContent += `<span style="font-weight: bold;">Direct Attempts: ${results.expectedAttempts[i]}</span> (${(100/parseFloat(results.successChances[i])).toFixed(2)} raw)`;
+            
+            // Add recovery attempts if not using cron and recovery attempts exist
+            if (!(useCronCheckbox && useCronCheckbox.checked) && results.recoveryAttempts && results.recoveryAttempts[i] > 0) {
+                detailContent += `, <span style="color: #e74c3c;">Recovery Attempts: ${results.recoveryAttempts[i].toFixed(2)}</span>`;
+                
+                // Calculate total attempts for this level
+                const totalForLevel = parseFloat(results.expectedAttempts[i]) + parseFloat(results.recoveryAttempts[i]);
+                detailContent += `, <span style="font-weight: bold;">Total: ${totalForLevel.toFixed(2)}</span>`;
+            }
+            
+            detailContent += `, Cost: ${Math.round(results.costPerLevel[i]).toLocaleString()} Silver`;
                                 
             // Add memory fragment info if included
             if (results.includeMemFrags) {
@@ -1149,11 +1277,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 
             // Add note about downgrades if not using cron and not enhancing from BASE level
             if (!(useCronCheckbox && useCronCheckbox.checked) && currentLevel !== 'BASE') {
-                detailContent += ` <span class="downgrade-info">(includes costs for potential downgrades and re-enhancements)</span>`;
+                // We've already added recovery attempts details inline in the earlier content
             }
             
             const detailItem = createElement('li', {}, '');
             detailItem.innerHTML = detailContent;
+            
+            // Add styling to make each enhancement level visually distinct
+            detailItem.style.padding = '8px 4px';
+            detailItem.style.marginBottom = '8px';
+            detailItem.style.borderBottom = '1px dotted #eee';
+            
             detailsList.appendChild(detailItem);
         }
         
@@ -1165,9 +1299,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Different note based on whether cron stones are used
         if (useCronCheckbox && useCronCheckbox.checked) {
-            note.textContent = 'Note: These calculations are based on known BDO enhancement mechanics with base chance, softcap, and hardcap thresholds.';
+            note.innerHTML = '<strong>Note:</strong> These calculations include Cron Stone costs. Cron Stones prevent item downgrades but durability is still lost.<br>' +
+                           '<span style="color: #ff0000; font-weight: bold; font-size: 1.1em;">WARNING: Failstack cost is not counted!!!</span>';
         } else {
-            note.textContent = 'Note: These calculations include the cost of potential downgrades on failed attempts without Cron stones. Each failure can drop the item one level (except from BASE), requiring additional materials AND attempts to re-enhance from the downgraded level. Both factors are included in the cost calculation.';
+            note.innerHTML = '<strong>Note:</strong> These calculations include the cost of potential downgrades on failed attempts without Cron stones.<br>' +
+                           '<strong>• Direct Attempts:</strong> The expected number of attempts needed at each level (100/success chance).<br>' +
+                           '<strong>• Recovery Attempts:</strong> Additional attempts needed to recover from downgrades after failures.<br>' +
+                           '<strong>• Total Per Level:</strong> Combined direct and recovery attempts for that specific level.<br>' +
+                           '<strong>• Overall Total Attempts:</strong> Includes all direct enhancement attempts PLUS all recovery attempts across all levels.<br>' +
+                           'This is why the total attempts is significantly higher than the sum of direct attempts shown in the details.<br>' +
+                           '<span style="color: #ff0000; font-weight: bold; font-size: 1.1em;">WARNING: Failstack cost is not counted!!!</span>';
         }
         
         resultsDiv.appendChild(note);
