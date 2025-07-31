@@ -318,9 +318,74 @@ document.addEventListener('DOMContentLoaded', async function() {
             // X is the max level, no more enhancements
         },
         'Fallen God\'s Armor': {
-            durabilityLoss: 20,                          // Durability loss on failure for all Fallen God's Armor enhancements
+            durabilityLoss: 30,                          // Durability loss on failure for all Fallen God's Armor enhancements
             memFragPerDurability: 1,                     // Each memory fragment restores 1 durability point
-            // Fallen God's Armor will follow a similar pattern when data is available
+            'BASE': { 
+                materials: [
+                    { itemId: 721003, count: 10 },        // Caphras Stone x10
+                    { itemId: 4998, count: 1 },           // Sharp Black Crystal Shard x1
+                    { itemId: 752023, count: 1 }          // Mass of Pure Magic x1
+                ],  
+                cronStones: 0,                               // No cron stones needed for BASE->I
+                enhancementData: {
+                    baseChance: 2.000,
+                    softcap: { fs: 340, chance: 70.00 },
+                    hardcap: { fs: 840, chance: 90 }
+                }
+            },
+            'I': { 
+                materials: [
+                    { itemId: 721003, count: 10 },        // Caphras Stone x10
+                    { itemId: 4998, count: 1 },           // Sharp Black Crystal Shard x1
+                    { itemId: 752023, count: 1 }          // Mass of Pure Magic x1
+                ],    
+                cronStones: 1500,                             // 1500 cron stones for I->II
+                enhancementData: {
+                    baseChance: 1.000,
+                    softcap: { fs: 690, chance: 70.00 },
+                    hardcap: { fs: 1690, chance: 90 }
+                }
+            },
+            'II': { 
+                materials: [
+                    { itemId: 721003, count: 10 },        // Caphras Stone x10
+                    { itemId: 4998, count: 1 },           // Sharp Black Crystal Shard x1
+                    { itemId: 752023, count: 1 }          // Mass of Pure Magic x1
+                ],    
+                cronStones: 2100,                             // 1800 cron stones for II->III
+                enhancementData: {
+                    baseChance: 0.500,
+                    softcap: { fs: 1390, chance: 70.00 },
+                    hardcap: { fs: 3390, chance: 90 }
+                }
+            },
+            'III': { 
+                materials: [
+                    { itemId: 721003, count: 10 },        // Caphras Stone x10
+                    { itemId: 4998, count: 1 },           // Sharp Black Crystal Shard x1
+                    { itemId: 752023, count: 1 }          // Mass of Pure Magic x1
+                ],   
+                cronStones: 2700,                             // 2500 cron stones for III->IV
+                enhancementData: {
+                    baseChance: 0.200,
+                    softcap: { fs: 3490, chance: 70.00 },
+                    hardcap: { fs: 8489, chance: 90 }
+                }
+            },
+            'IV': { 
+                materials: [
+                    { itemId: 721003, count: 10 },        // Caphras Stone x10
+                    { itemId: 4998, count: 1 },           // Sharp Black Crystal Shard x1
+                    { itemId: 752023, count: 1 }          // Mass of Pure Magic x1
+                ],    
+                cronStones: 4000,                             // 3200 cron stones for IV->V
+                enhancementData: {
+                    baseChance: 0.003,
+                    softcap: { fs: 279990, chance: 70.00 },
+                    hardcap: { fs: 679890, chance: 90 }
+                }
+            }
+            // V is the max level, no more enhancements
         }
     };
     
@@ -329,7 +394,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         820979: "Essence of Dawn",
         820984: "DAWN",
         820934: "Primordial Black Stone",
-        44195: "Memory Fragment"
+        721003: "Caphras Stone",
+        44195: "Memory Fragment",
+        4998: "Sharp Black Crystal Shard",
+        752023: "Mass of Pure Magic"
     };
     
     // Market prices with built-in defaults
@@ -337,23 +405,35 @@ document.addEventListener('DOMContentLoaded', async function() {
     const marketPrices = {
         'EU': {
             // Essence of Dawn
-            820979: 83000000, // 83 million silver based on example
+            820979: 100000000, // 83 million silver based on example
             // DAWN (special item that won't be fetched from the market)
             820984: 30000000, // 30 million silver fixed price
             // Primordial Black Stone
             820934: 50000000, // 50 million silver based on provided default
+            // Caphras Stone
+            721003: 3000000, // 3 million silver based on estimated value
             // Memory Fragment
-            4797: 5000000, // 5 million silver based on provided default
+            44195: 5000000, // 5 million silver based on provided default
+            // Sharp Black Crystal Shard
+            4998: 5000000, // 5 million silver based on estimated value
+            // Mass of Pure Magic
+            752023: 500000 // 500 thousand silver based on estimated value
         },
         'NA': {
             // Essence of Dawn with a small price variation for NA
-            820979: 83000000,
+            820979: 100000000,
             // DAWN (special item that won't be fetched from the market)
             820984: 30000000, // 30 million silver fixed price
             // Primordial Black Stone
             820934: 50000000, // 50 million silver based on provided default
+            // Caphras Stone
+            721003: 3000000, // 3 million silver based on estimated value
             // Memory Fragment
-            4797: 5000000, // 5 million silver based on provided default
+            44195: 5000000, // 5 million silver based on provided default
+            // Sharp Black Crystal Shard
+            4998: 5000000, // 5 million silver based on estimated value
+            // Mass of Pure Magic
+            752023: 500000 // 500 thousand silver based on estimated value
         }
     };
     
@@ -511,13 +591,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             memFragsCount = Math.ceil(durabilityLoss / memFragPerDurability);
             
             try {
-                const memFragPrice = await fetchItemPrice(currentRegion, 4797); // Memory Fragment ID
+                const memFragPrice = await fetchItemPrice(currentRegion, 44195); // Memory Fragment ID
                 memFragsCost = memFragPrice * memFragsCount;
                 console.log(`Adding memory fragment cost: ${memFragsCount} frags at ${memFragPrice.toLocaleString()} each = ${memFragsCost.toLocaleString()}`);
             } catch (error) {
                 console.error(`Error fetching price for memory fragments:`, error);
                 // Use default price if there's an error
-                const defaultPrice = marketPrices[currentRegion][4797] || 0;
+                const defaultPrice = marketPrices[currentRegion][44195] || 0;
                 memFragsCost = defaultPrice * memFragsCount;
             }
         }

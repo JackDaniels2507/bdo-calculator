@@ -8,6 +8,9 @@ const itemIds = {
     'DAWN': 820984,            // DAWN ID
     'Primordial Black Stone': 820934, // Primordial Black Stone ID
     'Memory Fragment': 44195,   // Memory Fragment ID
+    'Caphras Stone': 721003,    // Caphras Stone ID
+    'Sharp Black Crystal Shard': 4998,  // Sharp Black Crystal Shard ID
+    'Mass of Pure Magic': 752023, // Mass of Pure Magic ID
     // Add more items as needed
 };
 
