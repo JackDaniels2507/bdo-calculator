@@ -1,7 +1,3 @@
-# BDO price files
-bdo-prices-eu.json
-bdo-prices-na.json
-
 # Node modules if you're using npm
 node_modules/
 
