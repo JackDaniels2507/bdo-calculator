@@ -1,0 +1,56 @@
+name: Fetch BDO Market Prices
+
+on:
+  schedule:
+    # Runs every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    # Allows manual triggering
+
+jobs:
+  fetch-prices:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Needed for pushing to the repository
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies (if any)
+      run: |
+        if [ -f package.json ]; then
+          npm ci
+        fi
+      
+    - name: Run price fetcher script
+      run: node fetch-bdo-prices.js
+      id: fetch
+      continue-on-error: true
+      
+    - name: Check if fetch was successful
+      if: steps.fetch.outcome == 'failure'
+      run: |
+        echo "::error::Failed to fetch BDO prices! Check the logs for details."
+        exit 1
+        
+    - name: Commit and push if changed
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add bdo-prices-*.json
+        if git diff --staged --quiet; then
+          echo "No changes in price data."
+        else
+          git commit -m "Update BDO market prices [skip ci]"
+          git push
+          echo "Price data updated and committed."
+        fi

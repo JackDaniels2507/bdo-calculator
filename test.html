@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Enhancement Test</title>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const testDiv = document.getElementById('test-results');
+      
+      // Test the enhancement requirements mapping
+      const enhancementItemRequirements = {
+        'Kharazad': {
+          'BASE': [{ itemId: 820979, count: 1 }],    // Essence of Dawn x1 for BASE->I
+          'I': [{ itemId: 820979, count: 2 }],       // Essence of Dawn x2 for I->II
+          'II': [{ itemId: 820979, count: 3 }],      // Essence of Dawn x3 for II->III
+        }
+      };
+
+      function testEnhancement(item, level) {
+        const requirements = enhancementItemRequirements[item]?.[level];
+        const result = document.createElement('p');
+        
+        if (requirements && requirements.length > 0) {
+          result.textContent = `${item} ${level} requires ${requirements[0].count}x Item ID ${requirements[0].itemId}`;
+        } else {
+          result.textContent = `No requirements found for ${item} ${level}`;
+        }
+        
+        testDiv.appendChild(result);
+      }
+
+      // Test BASE, I, II
+      testEnhancement('Kharazad', 'BASE');
+      testEnhancement('Kharazad', 'I');
+      testEnhancement('Kharazad', 'II');
+      
+      // Test for non-existent level
+      testEnhancement('Kharazad', 'NON_EXISTENT');
+      
+      // Test for non-existent item
+      testEnhancement('NonExistentItem', 'BASE');
+    });
+  </script>
+</head>
+<body>
+  <h1>BDO Enhancement Requirements Test</h1>
+  <div id="test-results"></div>
+</body>
+</html>

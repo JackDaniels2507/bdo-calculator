@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BDO Enchantment Calculator</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Black Desert Online Enchantment Calculator</h1>
+        
+        <!-- Tab Navigation -->
+        <div class="tabs">
+            <div class="tab active" data-tab="calculator">Calculator</div>
+            <div class="tab" data-tab="simulation">Simulation</div>
+        </div>
+        
+        <!-- Calculator Tab -->
+        <div id="calculator-tab" class="tab-content active">
+            <div class="form-group">
+                <label for="item-select">Select Item to Enchant:</label>
+                <select id="item-select">
+                    <option value="">-- Select Item --</option>
+                    <option value="Kharazad">Kharazad</option>
+                    <option value="Sovereign">Sovereign</option>
+                    <option value="Fallen God's Armor">Fallen God's Armor</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="start-level">Starting Enhancement Level:</label>
+                <select id="start-level" disabled>
+                    <option value="">-- Select Level --</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="target-level">Target Enhancement Level:</label>
+                <select id="target-level" disabled>
+                    <option value="">-- Select Level --</option>
+                </select>
+            </div>
+            
+            <div id="failstack-container" class="form-group">
+                <!-- Failstack inputs will be dynamically generated here -->
+            </div>
+            
+            <div class="cost-region-container">
+                <div class="checkbox-container">
+                    <input type="checkbox" id="use-cron" name="use-cron">
+                    <label for="use-cron">Add Cron Stone Cost (3M silver per cron)</label>
+                </div>
+                
+                <!-- Region Switch -->
+                <div class="region-switch">
+                    <span class="region-label">Market Region:</span>
+                    <button id="region-eu" class="active">EU</button>
+                    <button id="region-na">NA</button>
+                </div>
+            </div>
+            
+            <button id="calculate-btn" disabled>Calculate</button>
+            
+            <div id="results" class="results-container">
+                <!-- Results will be displayed here -->
+            </div>
+        </div>
+        
+        <!-- Simulation Tab -->
+        <div id="simulation-tab" class="tab-content">
+            <div class="form-group">
+                <label for="sim-item-select">Select Item to Enchant:</label>
+                <select id="sim-item-select">
+                    <option value="">-- Select Item --</option>
+                    <option value="Kharazad">Kharazad</option>
+                    <option value="Sovereign">Sovereign</option>
+                    <option value="Fallen God's Armor">Fallen God's Armor</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="sim-target-level">Target Enhancement Level:</label>
+                <select id="sim-target-level" disabled>
+                    <option value="">-- Select Level --</option>
+                </select>
+            </div>
+            
+            <div class="simulation-controls">
+                <div class="simulation-control">
+                    <div class="form-group">
+                        <label for="sim-failstack">Starting Failstack:</label>
+                        <input type="number" id="sim-failstack" min="0" placeholder="Enter failstack value">
+                    </div>
+                </div>
+                
+                <div class="simulation-control">
+                    <div class="form-group">
+                        <label for="sim-attempts">Number of Attempts:</label>
+                        <input type="number" id="sim-attempts" min="1" value="1" placeholder="Enter number of attempts">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="cost-region-container">
+                <div class="checkbox-container">
+                    <input type="checkbox" id="sim-use-cron" name="sim-use-cron">
+                    <label for="sim-use-cron">Add Cron Stone Cost</label>
+                </div>
+                
+                <!-- Simulation Tab Region Switch (synced with calculator tab) -->
+                <div class="region-switch sim-region">
+                    <span class="region-label">Market Region:</span>
+                    <button id="sim-region-eu" class="active">EU</button>
+                    <button id="sim-region-na">NA</button>
+                </div>
+            </div>
+            
+            <div class="checkbox-container">
+                <input type="checkbox" id="sim-add-fs" name="sim-add-fs">
+                <label for="sim-add-fs">Add Failstack After Failed Attempt</label>
+            </div>
+            
+            <button id="simulate-btn" disabled>Run Simulation</button>
+            
+            <div id="sim-results" class="results-container">
+                <!-- Simulation results will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Load the direct script -->
+    <script src="bdoEnchant.js"></script>
+</body>
+</html>

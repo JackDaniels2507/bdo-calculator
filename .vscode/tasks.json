@@ -1,0 +1,12 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Open BDO Enchantment Calculator",
+			"type": "shell",
+			"command": "explorer \"c:\\Users\\mickrawc\\Downloads\\Enchant\\index.html\"",
+			"group": "run",
+			"problemMatcher": []
+		}
+	]
+}
