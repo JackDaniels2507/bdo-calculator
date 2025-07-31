@@ -672,8 +672,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
         
-        // Total cost for this attempt - now including memory fragment costs
-        const totalCost = materialsCost + cronCost + memFragsCost;
+        // Total cost for this attempt 
+        const totalCost = materialsCost + cronCost;
         console.log(`Total attempt cost for ${item} ${level}: ${totalCost.toLocaleString()} (materials: ${materialsCost.toLocaleString()}, cron: ${cronCost.toLocaleString()}, memory frags: ${memFragsCost.toLocaleString()})`);
         
         // Return cost details
