@@ -412,7 +412,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             try {
                 const regionLower = region.toLowerCase();
                 // Update this to your actual GitHub username and repository name
-                const jsonUrl = `https://USERNAME.github.io/REPO_NAME/bdo-prices-${regionLower}.json`;
+                const jsonUrl = `https://jackdaniels2507.github.io/bdo-calculator/bdo-prices-${regionLower}.json`;
                 
                 console.log(`Fetching latest price from ${jsonUrl} for item ${itemId}`);
                 
