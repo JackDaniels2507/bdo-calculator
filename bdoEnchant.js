@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const calculateBtn = document.getElementById('calculate-btn');
     const resultsDiv = document.getElementById('results');
     const useCronCheckbox = document.getElementById('use-cron');
+    const useMemFragsCheckbox = document.getElementById('use-mem-frags');
     
     // Get simulation tab elements
     const simItemSelect = document.getElementById('sim-item-select');
@@ -112,6 +113,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     // This structure maps each enhanceable item to all the data needed for enhancements
     // Format: { 
     //   itemName: { 
+    //     durabilityLoss: number,                   // Durability loss on failure for this item (moved to item level)
+    //     memFragPerDurability: number,              // How many durability points each memory fragment restores (e.g., 1 for most items, 2 for boss gear)
     //     currentLevel: { 
     //       materials: [{itemId: id, count: count}],  // Materials needed to go from currentLevel to next level
     //       cronStones: count,                        // Cron stones needed for this enhancement
@@ -125,6 +128,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     // }
     const enhancementItemRequirements = {
         'Kharazad': {
+            durabilityLoss: 20,                          // Durability loss on failure for all Kharazad enhancements
+            memFragPerDurability: 1,                     // Each memory fragment restores 1 durability point
             'BASE': { 
                 materials: [{ itemId: 820979, count: 1 }],    // Essence of Dawn x1 for BASE->I
                 cronStones: 0,                               // No cron stones needed for BASE->I
@@ -218,99 +223,103 @@ document.addEventListener('DOMContentLoaded', async function() {
             // X is the max level, no more enhancements
         },
         'Sovereign': {
+            durabilityLoss: 20,                          // Durability loss on failure for all Sovereign enhancements
+            memFragPerDurability: 1,                     // Each memory fragment restores 1 durability point
             'BASE': { 
                 materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for BASE->I
                 cronStones: 0,                               // No cron stones needed for BASE->I
                 enhancementData: {
-                    baseChance: 15.000,
-                    softcap: { fs: 30, chance: 70.00 },
-                    hardcap: { fs: 90, chance: 90 }
+                    baseChance: 8.550,
+                    softcap: { fs: 72, chance: 70.11 },
+                    hardcap: { fs: 189, chance: 90 }
                 }
             },
             'I': { 
                 materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for I->II
                 cronStones: 320,                              // 320 cron stones for I->II
                 enhancementData: {
-                    baseChance: 7.000,
-                    softcap: { fs: 80, chance: 70.00 },
-                    hardcap: { fs: 220, chance: 90 }
+                    baseChance: 4.120,
+                    softcap: { fs: 160, chance: 70.04 },
+                    hardcap: { fs: 403, chance: 90 }
                 }
             },
             'II': { 
                 materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for II->III
                 cronStones: 560,                              // 560 cron stones for II->III
                 enhancementData: {
-                    baseChance: 4.500,
-                    softcap: { fs: 140, chance: 70.00 },
-                    hardcap: { fs: 350, chance: 90 }
+                    baseChance: 2.000,
+                    softcap: { fs: 340, chance: 70.00 },
+                    hardcap: { fs: 840, chance: 90 }
                 }
             },
             'III': { 
                 materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for III->IV
                 cronStones: 780,                              // 780 cron stones for III->IV
                 enhancementData: {
-                    baseChance: 2.800,
-                    softcap: { fs: 230, chance: 70.00 },
-                    hardcap: { fs: 570, chance: 90 }
+                    baseChance: 0.910,
+                    softcap: { fs: 760, chance: 70.07 },
+                    hardcap: { fs: 1855, chance: 90 }
                 }
             },
             'IV': { 
                 materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for IV->V
                 cronStones: 970,                              // 970 cron stones for IV->V
                 enhancementData: {
-                    baseChance: 1.900,
-                    softcap: { fs: 350, chance: 70.00 },
-                    hardcap: { fs: 870, chance: 90 }
+                    baseChance: 0.469,
+                    softcap: { fs: 1483, chance: 70.02 },
+                    hardcap: { fs: 3613, chance: 90 }
                 }
             },
             'V': { 
                 materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for V->VI
                 cronStones: 1350,                             // 1350 cron stones for V->VI
                 enhancementData: {
-                    baseChance: 1.250,
-                    softcap: { fs: 530, chance: 70.00 },
-                    hardcap: { fs: 1300, chance: 90 }
+                    baseChance: 0.273,
+                    softcap: { fs: 2555, chance: 70.02 },
+                    hardcap: { fs: 6213, chance: 90 }
                 }
             },
             'VI': { 
                 materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for VI->VII
                 cronStones: 1550,                             // 1550 cron stones for VI->VII
                 enhancementData: {
-                    baseChance: 0.850,
-                    softcap: { fs: 780, chance: 70.00 },
-                    hardcap: { fs: 1900, chance: 90 }
+                    baseChance: 0.160,
+                    softcap: { fs: 4365, chance: 70.00 },
+                    hardcap: { fs: 10614, chance: 90 }
                 }
             },
             'VII': { 
                 materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for VII->VIII
                 cronStones: 2250,                             // 2250 cron stones for VII->VIII
                 enhancementData: {
-                    baseChance: 0.550,
-                    softcap: { fs: 1200, chance: 70.00 },
-                    hardcap: { fs: 2950, chance: 90 }
+                    baseChance: 0.107,
+                    softcap: { fs: 6502, chance: 70.00 },
+                    hardcap: { fs: 15801, chance: 90 }
                 }
             },
             'VIII': { 
                 materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for VIII->IX
                 cronStones: 2760,                             // 2760 cron stones for VIII->IX
                 enhancementData: {
-                    baseChance: 0.300,
-                    softcap: { fs: 2150, chance: 70.00 },
-                    hardcap: { fs: 5250, chance: 90 }
+                    baseChance: 0.049,
+                    softcap: { fs: 14423, chance: 70.00 },
+                    hardcap: { fs: 35037, chance: 90 }
                 }
             },
             'IX': { 
                 materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for IX->X
                 cronStones: 3920,                             // 3920 cron stones for IX->X
                 enhancementData: {
-                    baseChance: 0.170,
-                    softcap: { fs: 4000, chance: 70.00 },
-                    hardcap: { fs: 9800, chance: 90 }
+                    baseChance: 0.024,
+                    softcap: { fs: 28916, chance: 70.00 },
+                    hardcap: { fs: 70227, chance: 90 }
                 }
             },
             // X is the max level, no more enhancements
         },
         'Fallen God\'s Armor': {
+            durabilityLoss: 20,                          // Durability loss on failure for all Fallen God's Armor enhancements
+            memFragPerDurability: 1,                     // Each memory fragment restores 1 durability point
             // Fallen God's Armor will follow a similar pattern when data is available
         }
     };
@@ -319,7 +328,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     const itemNames = {
         820979: "Essence of Dawn",
         820984: "DAWN",
-        820934: "Primordial Black Stone"
+        820934: "Primordial Black Stone",
+        4797: "Memory Fragment"
     };
     
     // Market prices with built-in defaults
@@ -332,6 +342,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             820984: 30000000, // 30 million silver fixed price
             // Primordial Black Stone
             820934: 50000000, // 50 million silver based on provided default
+            // Memory Fragment
+            4797: 5000000, // 5 million silver based on provided default
         },
         'NA': {
             // Essence of Dawn with a small price variation for NA
@@ -340,6 +352,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             820984: 30000000, // 30 million silver fixed price
             // Primordial Black Stone
             820934: 50000000, // 50 million silver based on provided default
+            // Memory Fragment
+            4797: 5000000, // 5 million silver based on provided default
         }
     };
     
@@ -432,6 +446,7 @@ document.addEventListener('DOMContentLoaded', async function() {
      * @param {string} item - The item being enhanced
      * @param {string} level - The current level
      * @param {boolean} useCron - Whether to use cron stones
+     * @param {boolean} useMemFrags - Whether to include memory fragment costs
      * @returns {Promise<number>} - The cost of the attempt
      */
     /**
@@ -439,9 +454,10 @@ document.addEventListener('DOMContentLoaded', async function() {
      * @param {string} item - The item being enhanced
      * @param {string} level - The current level
      * @param {boolean} useCron - Whether to use cron stones
-     * @returns {Promise<number>} - The total cost of the attempt
+     * @param {boolean} useMemFrags - Whether to include memory fragment costs
+     * @returns {Promise<Object>} - The total cost and details of the attempt
      */
-    async function calculateAttemptCost(item, level, useCron) {
+    async function calculateAttemptCost(item, level, useCron, useMemFrags) {
         // Check if we have requirements for this item and level
         const requirements = enhancementItemRequirements[item]?.[level];
         
@@ -480,10 +496,46 @@ document.addEventListener('DOMContentLoaded', async function() {
             console.log(`Adding cron cost: ${cronCount} crons at ${cronPrice.toLocaleString()} each = ${cronCost.toLocaleString()}`);
         }
         
-        // Total cost for this attempt
-        const totalCost = materialsCost + cronCost;
-        console.log(`Total attempt cost for ${item} ${level}: ${totalCost.toLocaleString()}`);
-        return totalCost;
+        // Calculate memory fragments cost for durability repair on failure
+        let memFragsCost = 0;
+        let memFragsCount = 0;
+        if (useMemFrags && requirements) {
+            // Durability is lost on EVERY enhancement attempt (even with cron stones)
+            // Get durability loss from the item level instead of the enhancement level
+            const durabilityLoss = enhancementItemRequirements[item]?.durabilityLoss || 0;
+            
+            // Get how many durability points each memory fragment restores
+            const memFragPerDurability = enhancementItemRequirements[item]?.memFragPerDurability || 1;
+            
+            // Calculate number of memory fragments needed based on recovery rate
+            memFragsCount = Math.ceil(durabilityLoss / memFragPerDurability);
+            
+            try {
+                const memFragPrice = await fetchItemPrice(currentRegion, 4797); // Memory Fragment ID
+                memFragsCost = memFragPrice * memFragsCount;
+                console.log(`Adding memory fragment cost: ${memFragsCount} frags at ${memFragPrice.toLocaleString()} each = ${memFragsCost.toLocaleString()}`);
+            } catch (error) {
+                console.error(`Error fetching price for memory fragments:`, error);
+                // Use default price if there's an error
+                const defaultPrice = marketPrices[currentRegion][4797] || 0;
+                memFragsCost = defaultPrice * memFragsCount;
+            }
+        }
+        
+        // Total cost for this attempt - now including memory fragment costs
+        const totalCost = materialsCost + cronCost + memFragsCost;
+        console.log(`Total attempt cost for ${item} ${level}: ${totalCost.toLocaleString()} (materials: ${materialsCost.toLocaleString()}, cron: ${cronCost.toLocaleString()}, memory frags: ${memFragsCost.toLocaleString()})`);
+        
+        // Return cost details
+        return {
+            totalCost,
+            materialsCost,
+            cronCost,
+            memFragsCost,
+            memFragsCount,
+            durabilityLoss: enhancementItemRequirements[item]?.durabilityLoss || 0,
+            memFragPerDurability: enhancementItemRequirements[item]?.memFragPerDurability || 1
+        };
     }
     
     /**
@@ -817,11 +869,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         const successChancesArray = [];
         const expectedAttemptsArray = [];
         const costPerLevelArray = [];
+        const memFragsCostArray = [];
+        const memFragsCountArray = [];
         let totalAttempts = 0;
         let totalCostValue = 0;
+        let totalMemFragsCost = 0;
+        let totalMemFragsCount = 0;
         
-        // Check if we're using cron stones
+        // Check if we're using cron stones and memory fragments
         const useCron = useCronCheckbox && useCronCheckbox.checked;
+        const useMemFrags = useMemFragsCheckbox && useMemFragsCheckbox.checked;
         
         // Calculate for each enhancement step
         for (let index = 0; index < failstacks.length; index++) {
@@ -838,14 +895,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             let expectedAttempts = 100 / successChance;
             
             // Get the cost for this attempt (asynchronously)
-            const attemptCost = await calculateAttemptCost(
+            const costDetails = await calculateAttemptCost(
                 item, 
                 currentLevel, 
-                useCron
+                useCron,
+                useMemFrags
             );
             
             // Calculate total cost for this enhancement level
             let levelCost = 0;
+            let levelMemFragsCost = 0;
+            let levelMemFragsCount = 0;
             
             if (!useCron && currentLevel !== 'BASE') {
                 // When not using cron stones and item is not at BASE level,
@@ -860,7 +920,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (index > 0) {
                     // Cost to re-enhance from previous level
                     const prevLevel = levels[startIndex + index - 1];
-                    const reEnhanceCost = await calculateAttemptCost(item, prevLevel, useCron);
+                    const reEnhanceCostDetails = await calculateAttemptCost(item, prevLevel, useCron, useMemFrags);
                     
                     // Calculate success chance for the previous level
                     const prevFS = failstacks[index - 1];  // Use the failstack from the previous level
@@ -870,41 +930,83 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const prevExpectedAttempts = 100 / prevSuccessChance;
                     
                     // Total cost to re-enhance = cost per attempt × expected attempts × expected downgrades
-                    const downgradeCost = reEnhanceCost * prevExpectedAttempts * expectedDowngrades;
-                    levelCost = (attemptCost * expectedAttempts) + downgradeCost;
+                    const downgradeCost = reEnhanceCostDetails.totalCost * prevExpectedAttempts * expectedDowngrades;
+                    levelCost = (costDetails.totalCost * expectedAttempts) + downgradeCost;
+                    
+                    // Calculate memory fragment costs for failures
+                    if (useMemFrags) {
+                        // Memory fragments needed for current level failures
+                        const currentLevelMemFragsCost = costDetails.memFragsCost * (expectedAttempts - 1); // -1 because we succeed once
+                        const currentLevelMemFragsCount = costDetails.memFragsCount * (expectedAttempts - 1);
+                        
+                        // Memory fragments needed for previous level failures when re-enhancing
+                        const prevLevelMemFragsCost = reEnhanceCostDetails.memFragsCost * (prevExpectedAttempts - 1) * expectedDowngrades;
+                        const prevLevelMemFragsCount = reEnhanceCostDetails.memFragsCount * (prevExpectedAttempts - 1) * expectedDowngrades;
+                        
+                        levelMemFragsCost = currentLevelMemFragsCost + prevLevelMemFragsCost;
+                        levelMemFragsCount = currentLevelMemFragsCount + prevLevelMemFragsCount;
+                    }
                     
                     console.log(`Including downgrade cost for ${currentLevel}: ${downgradeCost.toLocaleString()}`);
                     console.log(`  - ${expectedDowngrades.toFixed(2)} expected downgrades`);
                     console.log(`  - ${prevExpectedAttempts.toFixed(2)} attempts to re-enhance per downgrade`);
                 } else {
                     // First level enhancement can't be downgraded below start level
-                    levelCost = attemptCost * expectedAttempts;
+                    levelCost = costDetails.totalCost * expectedAttempts;
+                    
+                    // Calculate memory fragment costs for failures at this level
+                    if (useMemFrags) {
+                        levelMemFragsCost = costDetails.memFragsCost * (expectedAttempts - 1); // -1 because we succeed once
+                        levelMemFragsCount = costDetails.memFragsCount * (expectedAttempts - 1);
+                    }
                 }
             } else {
-                // With cron stones, no downgrades occur
-                levelCost = attemptCost * expectedAttempts;
+                // With cron stones, no downgrades occur but durability is still lost
+                levelCost = costDetails.totalCost * expectedAttempts;
+                
+                // Memory fragment costs still apply as durability is lost with each attempt
+                if (useMemFrags) {
+                    levelMemFragsCost = costDetails.memFragsCost * expectedAttempts;
+                    levelMemFragsCount = costDetails.memFragsCount * expectedAttempts;
+                } else {
+                    levelMemFragsCost = 0;
+                    levelMemFragsCount = 0;
+                }
             }
             
             expectedAttemptsArray.push(expectedAttempts.toFixed(2));
             totalAttempts += expectedAttempts;
             costPerLevelArray.push(levelCost);
             totalCostValue += levelCost;
+            memFragsCostArray.push(levelMemFragsCost);
+            memFragsCountArray.push(levelMemFragsCount);
+            totalMemFragsCost += levelMemFragsCost;
+            totalMemFragsCount += levelMemFragsCount;
             
             // Store success chance with 3 decimal places precision
             successChancesArray.push(successChance.toFixed(3));
         }
+        
+        // The final total cost is just totalCostValue since memory fragment costs 
+        // are already included in the levelCost calculations
+        let finalTotalCost = totalCostValue;
         
         // Return the calculated results
         return {
             item: item,
             startLevel: startLevel,
             targetLevel: targetLevel,
-            totalCost: Math.round(totalCostValue),
+            totalCost: Math.round(finalTotalCost), // Already includes memory fragment costs from each level's calculation
             attemptsPrediction: parseFloat(totalAttempts.toFixed(2)),
             failstackUsage: failstacks,
             successChances: successChancesArray,
             expectedAttempts: expectedAttemptsArray,
-            costPerLevel: costPerLevelArray
+            costPerLevel: costPerLevelArray,
+            memFragsCost: memFragsCostArray,
+            totalMemFragsCost: Math.round(totalMemFragsCost),
+            memFragsCount: memFragsCountArray,
+            totalMemFragsCount: Math.round(totalMemFragsCount),
+            includeMemFrags: useMemFrags
         };
     }
     
@@ -924,7 +1026,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         itemInfo.innerHTML = `<strong>Item:</strong> ${results.item} (${formattedStartLevel} → ${formattedTargetLevel})`;
         
         const costInfo = createElement('p', {}, '');
-        costInfo.innerHTML = `<strong>Estimated Total Cost:</strong> ${results.totalCost.toLocaleString()} Silver`;
+        // Always show the total cost without specifying components in this line
+        costInfo.innerHTML = `<strong>Estimated Total Cost:</strong> ${results.totalCost.toLocaleString()} Silver`
         
         const attemptsInfo = createElement('p', {}, '');
         attemptsInfo.innerHTML = `<strong>Estimated Attempts:</strong> ${results.attemptsPrediction}`;
@@ -958,6 +1061,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 `Success Chance: ${parseFloat(results.successChances[i]).toFixed(3)}%, ` +
                                 `Expected Attempts: ${results.expectedAttempts[i]}, ` +
                                 `Cost: ${Math.round(results.costPerLevel[i]).toLocaleString()} Silver`;
+                                
+            // Add memory fragment info if included
+            if (results.includeMemFrags) {
+                detailContent += `, Memory Fragments: ${Math.round(results.memFragsCount[i]).toLocaleString()} (${Math.round(results.memFragsCost[i]).toLocaleString()} Silver)`;
+            }
                                 
             // Add note about downgrades if not using cron and not enhancing from BASE level
             if (!(useCronCheckbox && useCronCheckbox.checked) && currentLevel !== 'BASE') {
