@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const calculateBtn = document.getElementById('calculate-btn');
     const resultsDiv = document.getElementById('results');
     const useCronCheckbox = document.getElementById('use-cron');
+    const useCostumeCronCheckbox = document.getElementById('use-costume-cron');
     const useMemFragsCheckbox = document.getElementById('use-mem-frags');
     
     // Get simulation tab elements
@@ -59,6 +60,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const simFailstack = document.getElementById('sim-failstack');
     const simAttempts = document.getElementById('sim-attempts');
     const simUseCron = document.getElementById('sim-use-cron');
+    const simUseCostumeCron = document.getElementById('sim-use-costume-cron');
     const simAddFS = document.getElementById('sim-add-fs');
     const simulateBtn = document.getElementById('simulate-btn');
     const simResultsDiv = document.getElementById('sim-results');
@@ -72,6 +74,40 @@ document.addEventListener('DOMContentLoaded', async function() {
     const regionNA = document.getElementById('region-na');
     const simRegionEU = document.getElementById('sim-region-eu');
     const simRegionNA = document.getElementById('sim-region-na');
+    
+    // Add event listeners to make cron checkboxes mutually exclusive
+    if (useCronCheckbox) {
+        useCronCheckbox.addEventListener('change', function() {
+            if (this.checked && useCostumeCronCheckbox) {
+                useCostumeCronCheckbox.checked = false;
+            }
+        });
+    }
+    
+    if (useCostumeCronCheckbox) {
+        useCostumeCronCheckbox.addEventListener('change', function() {
+            if (this.checked && useCronCheckbox) {
+                useCronCheckbox.checked = false;
+            }
+        });
+    }
+    
+    // Same for simulation tab
+    if (simUseCron) {
+        simUseCron.addEventListener('change', function() {
+            if (this.checked && simUseCostumeCron) {
+                simUseCostumeCron.checked = false;
+            }
+        });
+    }
+    
+    if (simUseCostumeCron) {
+        simUseCostumeCron.addEventListener('change', function() {
+            if (this.checked && simUseCron) {
+                simUseCron.checked = false;
+            }
+        });
+    }
     
     // Log which elements were found or not found for debugging
     console.log('DOM elements found:', {
@@ -571,7 +607,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         let cronCost = 0;
         if (useCron && requirements) {
             const cronCount = requirements.cronStones || 0;
-            const cronPrice = 3000000; // 3 million per cron stone
+            let cronPrice;
+            
+            // Check which type of cron stones we're using
+            if (useCostumeCronCheckbox && useCostumeCronCheckbox.checked) {
+                cronPrice = 2185297; // Costume cron price
+            } else {
+                cronPrice = 3000000; // Regular cron price (3 million per cron stone)
+            }
+            
             cronCost = cronCount * cronPrice;
             console.log(`Adding cron cost: ${cronCount} crons at ${cronPrice.toLocaleString()} each = ${cronCost.toLocaleString()}`);
         }
@@ -961,7 +1005,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         let totalCronCount = 0;
         
         // Check if we're using cron stones and memory fragments
-        const useCron = useCronCheckbox && useCronCheckbox.checked;
+        const useCron = (useCronCheckbox && useCronCheckbox.checked) || (useCostumeCronCheckbox && useCostumeCronCheckbox.checked);
         const useMemFrags = useMemFragsCheckbox && useMemFragsCheckbox.checked;
         
         // Arrays to track which levels use cron stones
@@ -1062,7 +1106,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                         if (useCronForRecovery) {
                             const cronStoneCount = enhancementItemRequirements[item]?.[prevLevel]?.cronStones || 0;
                             const levelCronCount = cronStoneCount * levelExpectedAttempts * recoveryCostMultiplier;
-                            const levelCronCost = 3000000 * levelCronCount; // 3 million per cron stone
+                            
+                            // Check which type of cron stones we're using
+                            let cronPrice;
+                            if (useCostumeCronCheckbox && useCostumeCronCheckbox.checked) {
+                                cronPrice = 2185297; // Costume cron price
+                            } else {
+                                cronPrice = 3000000; // Regular cron price (3 million per cron stone)
+                            }
+                            
+                            const levelCronCost = cronPrice * levelCronCount;
                             
                             // Add to our total cron tracking (these will be added to the totals later)
                             totalCronCount += levelCronCount;
@@ -1256,8 +1309,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Check if any cron stones were used (either globally or for first level only)
         if (results.totalCronCount > 0) {
-            // Global cron stones enabled
-            if (useCronCheckbox && useCronCheckbox.checked) {
+            // Global cron stones enabled (either regular or costume)
+            if ((useCronCheckbox && useCronCheckbox.checked) || (useCostumeCronCheckbox && useCostumeCronCheckbox.checked)) {
                 costBreakdown.innerHTML = 
                     `• <strong>Cron Stones:</strong> ${Math.round(results.totalCronCount).toLocaleString()} stones (${Math.round(results.totalCronCost).toLocaleString()} Silver)`;
             } 
@@ -1307,7 +1360,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         attemptsInfo.innerHTML = `<strong>Estimated Total Attempts:</strong> ${results.attemptsPrediction}`;
         
         // Show additional breakdown for recovery attempts if any
-        if (!useCronCheckbox || !useCronCheckbox.checked) {
+        if ((!useCronCheckbox || !useCronCheckbox.checked) && (!useCostumeCronCheckbox || !useCostumeCronCheckbox.checked)) {
             // Calculate total direct and recovery attempts
             let totalDirectAttempts = 0;
             let totalRecoveryAttempts = 0;
@@ -1376,7 +1429,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             detailContent += `<span style="font-weight: bold;">Direct Attempts: ${results.expectedAttempts[i]}</span> (${(100/parseFloat(results.successChances[i])).toFixed(2)} raw)`;
             
             // Add recovery attempts if not using cron and recovery attempts exist
-            if (!(useCronCheckbox && useCronCheckbox.checked) && results.recoveryAttempts && results.recoveryAttempts[i] > 0) {
+            if (!((useCronCheckbox && useCronCheckbox.checked) || (useCostumeCronCheckbox && useCostumeCronCheckbox.checked)) && results.recoveryAttempts && results.recoveryAttempts[i] > 0) {
                 detailContent += `, <span style="color: #e74c3c;">Recovery Attempts: ${results.recoveryAttempts[i].toFixed(2)}</span>`;
                 
                 // Calculate total attempts for this level
@@ -1389,7 +1442,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Add cron stone cost details if cron stones are used for this level
             if (results.useCronPerLevel && results.useCronPerLevel[i] && results.cronCost && results.cronCost[i] > 0) {
                 // Special message for first level cron when global cron is disabled
-                if (i === 0 && !(useCronCheckbox && useCronCheckbox.checked)) {
+                if (i === 0 && !((useCronCheckbox && useCronCheckbox.checked) || (useCostumeCronCheckbox && useCostumeCronCheckbox.checked))) {
                     detailContent += `<br><span style="margin-left: 15px; color: #2ecc71;">• Base Protection Cron Stones: ${Math.round(results.cronStoneCount[i]).toLocaleString()} (${Math.round(results.cronCost[i]).toLocaleString()} Silver)</span>`;
                     
                     // Calculate how many cron stones are used for recovery attempts for this level
@@ -1413,7 +1466,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
                                 
             // Add note about downgrades if not using cron and not enhancing from BASE level
-            if (!(useCronCheckbox && useCronCheckbox.checked) && currentLevel !== 'BASE') {
+            if (!((useCronCheckbox && useCronCheckbox.checked) || (useCostumeCronCheckbox && useCostumeCronCheckbox.checked)) && currentLevel !== 'BASE') {
                 // We've already added recovery attempts details inline in the earlier content
             }
             
@@ -1435,8 +1488,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         note.className = 'note';
         
         // Different note based on whether cron stones are used
-        if (useCronCheckbox && useCronCheckbox.checked) {
-            note.innerHTML = '<strong>Note:</strong> These calculations include Cron Stone costs. Cron Stones prevent item downgrades but durability is still lost.<br>' +
+        if ((useCronCheckbox && useCronCheckbox.checked) || (useCostumeCronCheckbox && useCostumeCronCheckbox.checked)) {
+            let cronType = useCronCheckbox && useCronCheckbox.checked ? "Regular Cron Stones (3M silver per cron)" : "Costume Cron Stones (2,185,297 silver per cron)";
+            note.innerHTML = `<strong>Note:</strong> These calculations include ${cronType} costs. Cron Stones prevent item downgrades but durability is still lost.<br>` +
                            '<span style="color: #ff0000; font-weight: bold; font-size: 1.1em;">WARNING: Failstack cost is not counted!!!</span>';
         } else {
             note.innerHTML = '<strong>Note:</strong> These calculations include the cost of potential downgrades on failed attempts without Cron stones.<br>' +
