@@ -7,7 +7,7 @@ const itemIds = {
     'Essence of Dawn': 820979,  // Essence of Dawn ID
     'DAWN': 820984,            // DAWN ID
     'Primordial Black Stone': 820934, // Primordial Black Stone ID
-    'Memory Fragment': 4797,   // Memory Fragment ID
+    'Memory Fragment': 44195,   // Memory Fragment ID
     // Add more items as needed
 };
 

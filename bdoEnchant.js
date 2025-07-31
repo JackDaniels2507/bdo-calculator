@@ -329,7 +329,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         820979: "Essence of Dawn",
         820984: "DAWN",
         820934: "Primordial Black Stone",
-        4797: "Memory Fragment"
+        44195: "Memory Fragment"
     };
     
     // Market prices with built-in defaults
