@@ -23,13 +23,8 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: '18'
-        cache: 'npm'
         
-    - name: Install dependencies (if any)
-      run: |
-        if [ -f package.json ]; then
-          npm ci
-        fi
+    # No dependencies to install since this is a simple Node.js script with no package.json
       
     - name: Run price fetcher script
       run: node fetch-bdo-prices.js
