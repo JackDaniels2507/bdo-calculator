@@ -172,7 +172,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enhancementData: {
                     baseChance: 16.300,
                     softcap: { fs: 33, chance: 70.09 },
-                    hardcap: { fs: 95, chance: 90 }
+                    hardcap: { fs: 95, chance: 90 },
+                    recommendedFS: 38
                 }
             },
             'I': { 
@@ -181,7 +182,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enhancementData: {
                     baseChance: 7.300,
                     softcap: { fs: 86, chance: 70.08 },
-                    hardcap: { fs: 223, chance: 90 }
+                    hardcap: { fs: 223, chance: 90 },
+                    recommendedFS: 66
                 }
             },
             'II': { 
@@ -190,7 +192,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enhancementData: {
                     baseChance: 4.570,
                     softcap: { fs: 144, chance: 70.38 },
-                    hardcap: { fs: 359, chance: 90 }
+                    hardcap: { fs: 359, chance: 90 },
+                    recommendedFS: 96
                 }
             },
             'III': { 
@@ -199,7 +202,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enhancementData: {
                     baseChance: 2.890,
                     softcap: { fs: 233, chance: 70.23 },
-                    hardcap: { fs: 576, chance: 90 }
+                    hardcap: { fs: 576, chance: 90 },
+                    recommendedFS: 142
                 }
             },
             'IV': { 
@@ -208,7 +212,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enhancementData: {
                     baseChance: 1.910,
                     softcap: { fs: 357, chance: 70.10 },
-                    hardcap: { fs: 878, chance: 90 }
+                    hardcap: { fs: 878, chance: 90 },
+                    recommendedFS: 161
                 }
             },
             'V': { 
@@ -217,7 +222,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enhancementData: {
                     baseChance: 1.290,
                     softcap: { fs: 533, chance: 70.05 },
-                    hardcap: { fs: 1307, chance: 90 }
+                    hardcap: { fs: 1307, chance: 90 },
+                    recommendedFS: 191
                 }
             },
             'VI': { 
@@ -226,7 +232,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enhancementData: {
                     baseChance: 0.880,
                     softcap: { fs: 786, chance: 70.05 },
-                    hardcap: { fs: 1920, chance: 90 }
+                    hardcap: { fs: 1920, chance: 90 },
+                    recommendedFS: 225
                 }
             },
             'VII': { 
@@ -235,7 +242,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enhancementData: {
                     baseChance: 0.570,
                     softcap: { fs: 1219, chance: 69.54 },
-                    hardcap: { fs: 2969, chance: 90 }
+                    hardcap: { fs: 2969, chance: 90 },
+                    recommendedFS: 272
                 }
             },
             'VIII': { 
@@ -244,7 +252,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enhancementData: {
                     baseChance: 0.320,
                     softcap: { fs: 2178, chance: 70.02 },
-                    hardcap: { fs: 5300, chance: 90 }
+                    hardcap: { fs: 5300, chance: 90 },
+                    recommendedFS: 314
                 }
             },
             'IX': { 
@@ -253,7 +262,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enhancementData: {
                     baseChance: 0.172,
                     softcap: { fs: 4060, chance: 70.00 },
-                    hardcap: { fs: 9872, chance: 90 }
+                    hardcap: { fs: 9872, chance: 90 },
+                    recommendedFS: 316
                 }
             },
             // X is the max level, no more enhancements
@@ -267,7 +277,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enhancementData: {
                     baseChance: 8.550,
                     softcap: { fs: 72, chance: 70.11 },
-                    hardcap: { fs: 189, chance: 90 }
+                    hardcap: { fs: 189, chance: 90 },
+                    recommendedFS: 48
                 }
             },
             'I': { 
@@ -276,7 +287,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enhancementData: {
                     baseChance: 4.120,
                     softcap: { fs: 160, chance: 70.04 },
-                    hardcap: { fs: 403, chance: 90 }
+                    hardcap: { fs: 403, chance: 90 },
+                    recommendedFS: 66
                 }
             },
             'II': { 
@@ -285,7 +297,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enhancementData: {
                     baseChance: 2.000,
                     softcap: { fs: 340, chance: 70.00 },
-                    hardcap: { fs: 840, chance: 90 }
+                    hardcap: { fs: 840, chance: 90 },
+                    recommendedFS: 106
                 }
             },
             'III': { 
@@ -294,7 +307,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enhancementData: {
                     baseChance: 0.910,
                     softcap: { fs: 760, chance: 70.07 },
-                    hardcap: { fs: 1855, chance: 90 }
+                    hardcap: { fs: 1855, chance: 90 },
+                    recommendedFS: 191
                 }
             },
             'IV': { 
@@ -303,7 +317,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enhancementData: {
                     baseChance: 0.469,
                     softcap: { fs: 1483, chance: 70.02 },
-                    hardcap: { fs: 3613, chance: 90 }
+                    hardcap: { fs: 3613, chance: 90 },
+                    recommendedFS: 234
                 }
             },
             'V': { 
@@ -312,7 +327,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enhancementData: {
                     baseChance: 0.273,
                     softcap: { fs: 2555, chance: 70.02 },
-                    hardcap: { fs: 6213, chance: 90 }
+                    hardcap: { fs: 6213, chance: 90 },
+                    recommendedFS: 290
                 }
             },
             'VI': { 
@@ -321,7 +337,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enhancementData: {
                     baseChance: 0.160,
                     softcap: { fs: 4365, chance: 70.00 },
-                    hardcap: { fs: 10614, chance: 90 }
+                    hardcap: { fs: 10614, chance: 90 },
+                    recommendedFS: 314
                 }
             },
             'VII': { 
@@ -330,7 +347,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enhancementData: {
                     baseChance: 0.107,
                     softcap: { fs: 6502, chance: 70.00 },
-                    hardcap: { fs: 15801, chance: 90 }
+                    hardcap: { fs: 15801, chance: 90 },
+                    recommendedFS: 316
                 }
             },
             'VIII': { 
@@ -339,7 +357,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enhancementData: {
                     baseChance: 0.049,
                     softcap: { fs: 14423, chance: 70.00 },
-                    hardcap: { fs: 35037, chance: 90 }
+                    hardcap: { fs: 35037, chance: 90 },
+                    recommendedFS: 346
                 }
             },
             'IX': { 
@@ -348,7 +367,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enhancementData: {
                     baseChance: 0.024,
                     softcap: { fs: 28916, chance: 70.00 },
-                    hardcap: { fs: 70227, chance: 90 }
+                    hardcap: { fs: 70227, chance: 90 },
+                    recommendedFS: 346
                 }
             },
             // X is the max level, no more enhancements
@@ -366,7 +386,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enhancementData: {
                     baseChance: 2.000,
                     softcap: { fs: 340, chance: 70.00 },
-                    hardcap: { fs: 840, chance: 90 }
+                    hardcap: { fs: 840, chance: 90 },
+                    recommendedFS: 76
                 }
             },
             'I': { 
@@ -379,7 +400,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enhancementData: {
                     baseChance: 1.000,
                     softcap: { fs: 690, chance: 70.00 },
-                    hardcap: { fs: 1690, chance: 90 }
+                    hardcap: { fs: 1690, chance: 90 },
+                    recommendedFS: 142
                 }
             },
             'II': { 
@@ -392,7 +414,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enhancementData: {
                     baseChance: 0.500,
                     softcap: { fs: 1390, chance: 70.00 },
-                    hardcap: { fs: 3390, chance: 90 }
+                    hardcap: { fs: 3390, chance: 90 },
+                    recommendedFS: 272
                 }
             },
             'III': { 
@@ -405,7 +428,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enhancementData: {
                     baseChance: 0.200,
                     softcap: { fs: 3490, chance: 70.00 },
-                    hardcap: { fs: 8489, chance: 90 }
+                    hardcap: { fs: 8489, chance: 90 },
+                    recommendedFS: 314
                 }
             },
             'IV': { 
@@ -418,7 +442,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enhancementData: {
                     baseChance: 0.003,
                     softcap: { fs: 279990, chance: 70.00 },
-                    hardcap: { fs: 679890, chance: 90 }
+                    hardcap: { fs: 679890, chance: 90 },
+                    recommendedFS: 346
                 }
             }
             // V is the max level, no more enhancements
@@ -529,7 +554,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         const defaultData = {
             baseChance: 2,
             softcap: { fs: 100, chance: 40 },
-            hardcap: { fs: 220, chance: 90 }
+            hardcap: { fs: 220, chance: 90 },
+            recommendedFS: 50
         };
         
         // Get the item's data or default to an empty object
@@ -907,15 +933,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                         marginLeft: '5px',
                         display: 'inline-block'
                     }
-                }, 'Use softcap values');
+                }, 'Use recommended FS by BairogHaan');
                 
                 const globalSoftcapContainer = createElement('div', { 
                     className: 'global-softcap-container' 
                 }, [globalSoftcapCheckbox, globalSoftcapLabel]);
                 
-                // Store input references and softcap values for each field
+                // Store input references and recommended FS values for each field
                 const inputFields = [];
-                const softcapValues = [];
+                const recommendedFSValues = [];
                 
                 // Add the global softcap elements to the container
                 globalSoftcapContainer.appendChild(globalSoftcapCheckbox);
@@ -927,9 +953,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const currentLevel = levels[startIndex + i];
                     const targetLevel = levels[startIndex + i + 1];
                     
-                    // Get the softcap failstack value for this enhancement level if available
-                    const softcapFS = enhancementItemRequirements[selectedItem]?.[currentLevel]?.enhancementData?.softcap?.fs || 0;
-                    softcapValues.push(softcapFS);
+                    // Get the recommended failstack value for this enhancement level if available
+                    const recommendedFS = enhancementItemRequirements[selectedItem]?.[currentLevel]?.enhancementData?.recommendedFS || 0;
+                    recommendedFSValues.push(recommendedFS);
                     
                     // Create input element using our helper function
                     const input = createElement('input', {
@@ -958,26 +984,25 @@ document.addEventListener('DOMContentLoaded', async function() {
                     failstackContainer.appendChild(failstackDiv);
                 }
                 
-                // Add event listener to the global softcap checkbox
+                // Add event listener to the recommended FS checkbox
                 globalSoftcapCheckbox.addEventListener('change', function() {
                     const isChecked = this.checked;
                     
                     // Apply to all input fields
                     for (let i = 0; i < inputFields.length; i++) {
                         if (isChecked) {
-                            // Store the original value before applying softcap
+                            // Store the original value before applying recommended FS
                             inputFields[i].dataset.originalValue = inputFields[i].value;
-                            // Set to softcap value
-                            inputFields[i].value = softcapValues[i];
-                            // Show softcap in placeholder while disabled
-                            inputFields[i].placeholder = `Softcap: ${softcapValues[i]}`;
-                            inputFields[i].disabled = true;
+                            // Set to recommended FS value
+                            inputFields[i].value = recommendedFSValues[i];
+                            // Show recommended FS in placeholder
+                            inputFields[i].placeholder = `Recommended FS: ${recommendedFSValues[i]}`;
+                            // Keep the field enabled for modification
                         } else {
                             // Clear the value when unchecking
                             inputFields[i].value = inputFields[i].dataset.originalValue || '';
                             // Reset placeholder
                             inputFields[i].placeholder = 'Enter failstack count';
-                            inputFields[i].disabled = false;
                         }
                     }
                 });
