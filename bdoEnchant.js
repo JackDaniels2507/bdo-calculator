@@ -143,6 +143,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Set default region
     let currentRegion = 'EU';
     
+    // Initialize Cron Stone checkbox based on default region (easter egg)
+    if (currentRegion === 'EU' && useCronCheckbox && useCostumeCronCheckbox) {
+        useCronCheckbox.checked = true;
+        useCostumeCronCheckbox.checked = false;
+    } else if (currentRegion === 'NA' && useCronCheckbox && useCostumeCronCheckbox) {
+        useCronCheckbox.checked = false;
+        useCostumeCronCheckbox.checked = true;
+    }
+    
     console.log('BDO Enhancement Calculator initialized');
     
     // Enhancement item requirements structure mapping items to their required enhancement materials
@@ -755,6 +764,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Set the current region for API calls
         currentRegion = 'EU';
         
+        // Easter egg: Auto-select Vendor Cron Stone for EU
+        if (useCronCheckbox && useCostumeCronCheckbox) {
+            useCronCheckbox.checked = true;
+            useCostumeCronCheckbox.checked = false;
+        }
+        
+        // Same for simulation tab
+        if (simUseCron && simUseCostumeCron) {
+            simUseCron.checked = true;
+            simUseCostumeCron.checked = false;
+        }
+        
         // Clear any calculation results when region changes
         if (resultsDiv) resultsDiv.innerHTML = '';
         if (simResultsDiv) simResultsDiv.innerHTML = '';
@@ -774,6 +795,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Set the current region for API calls
         currentRegion = 'NA';
+        
+        // Easter egg: Auto-select Costume Cron Stone for NA
+        if (useCronCheckbox && useCostumeCronCheckbox) {
+            useCronCheckbox.checked = false;
+            useCostumeCronCheckbox.checked = true;
+        }
+        
+        // Same for simulation tab
+        if (simUseCron && simUseCostumeCron) {
+            simUseCron.checked = false;
+            simUseCostumeCron.checked = true;
+        }
         
         // Clear any calculation results when region changes
         if (resultsDiv) resultsDiv.innerHTML = '';
