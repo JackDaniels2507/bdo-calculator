@@ -234,6 +234,10 @@ button:disabled {
     border-radius: 4px;
 }
 
+.sim-options-container {
+    width: 100%;
+}
+
 .results-container {
     margin-top: 2rem;
     padding: 1rem;

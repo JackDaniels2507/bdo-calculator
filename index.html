@@ -13,7 +13,7 @@
         <!-- Tab Navigation -->
         <div class="tabs">
             <div class="tab active" data-tab="calculator">Calculator</div>
-            <div class="tab" data-tab="simulation">Simulation</div>
+            <div class="tab" data-tab="simulation">Simulation (Beta)</div>
         </div>
         
         <!-- Calculator Tab -->
@@ -111,37 +111,50 @@
                         <label for="sim-failstack">Starting Failstack:</label>
                         <input type="number" id="sim-failstack" min="0" placeholder="Enter failstack value">
                     </div>
+                    <div class="checkbox-container" style="margin-top: 5px;">
+                        <input type="checkbox" id="sim-use-recommended-fs" name="sim-use-recommended-fs">
+                        <label for="sim-use-recommended-fs">Use recommended FS by BairogHaan</label>
+                    </div>
                 </div>
                 
                 <div class="simulation-control">
                     <div class="form-group">
                         <label for="sim-attempts">Number of Attempts:</label>
-                        <input type="number" id="sim-attempts" min="1" value="1" placeholder="Enter number of attempts">
+                        <input type="number" id="sim-attempts" min="1" placeholder="Enter number of attempts">
                     </div>
                 </div>
             </div>
             
             <div class="cost-region-container">
-                <div class="cron-options-container">
-                    <div style="font-weight: bold; margin-bottom: 5px;">Cron Stone Options:</div>
-                    <div class="cron-column">
-                        <div class="checkbox-container">
-                            <input type="checkbox" id="sim-use-cron" name="sim-use-cron">
-                            <label for="sim-use-cron">Vendor Cron Stone (3M silver per cron)</label>
-                        </div>
-                        
-                        <div class="checkbox-container costume-cron">
-                            <input type="checkbox" id="sim-use-costume-cron" name="sim-use-costume-cron">
-                            <label for="sim-use-costume-cron">Costume Cron Stone (2,185,297 silver per cron)</label>
-                        </div>
+                <!-- Simulation Tab Region Switch (synced with calculator tab) -->
+                <div class="region-switch-container">
+                    <div class="region-switch sim-region">
+                        <span class="region-label">Market Region:</span>
+                        <button id="sim-region-eu" class="active">EU</button>
+                        <button id="sim-region-na">NA</button>
                     </div>
                 </div>
                 
-                <!-- Simulation Tab Region Switch (synced with calculator tab) -->
-                <div class="region-switch sim-region">
-                    <span class="region-label">Market Region:</span>
-                    <button id="sim-region-eu" class="active">EU</button>
-                    <button id="sim-region-na">NA</button>
+                <div class="sim-options-container">
+                    <div class="cron-options-container">
+                        <div style="font-weight: bold; margin-bottom: 5px;">Cron Stone Options:</div>
+                        <div class="cron-column">
+                            <div class="checkbox-container">
+                                <input type="checkbox" id="sim-use-cron" name="sim-use-cron">
+                                <label for="sim-use-cron">Vendor Cron Stone (3M silver per cron)</label>
+                            </div>
+                            
+                            <div class="checkbox-container costume-cron">
+                                <input type="checkbox" id="sim-use-costume-cron" name="sim-use-costume-cron">
+                                <label for="sim-use-costume-cron">Costume Cron Stone (2,185,297 silver per cron)</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="checkbox-container mem-frag-container">
+                        <input type="checkbox" id="sim-use-mem-frags" name="sim-use-mem-frags">
+                        <label for="sim-use-mem-frags">Include memory fragment costs for durability repair</label>
+                    </div>
                 </div>
             </div>
             

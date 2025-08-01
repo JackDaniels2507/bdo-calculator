@@ -7,25 +7,19 @@
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('BDO Enhancement Calculator initializing...');
     
-    // Hide simulation tab and related elements as they need more implementation
+    // Get simulation tab and related elements
     const simulationTab = document.querySelector('.tab[data-tab="simulation"]');
     const simulationContent = document.getElementById('simulation-tab');
-    const simRegionContainer = document.querySelector('.sim-region-switch');
+    const simRegionContainer = document.querySelector('.sim-region');
     
-    // Hide the simulation tab
+    // Make sure simulation tab is visible
     if (simulationTab) {
-        simulationTab.style.display = 'none';
-        console.log('Simulation tab hidden as it needs more implementation');
+        console.log('Simulation tab is now available');
     }
     
-    // Hide the simulation content
-    if (simulationContent) {
-        simulationContent.style.display = 'none';
-    }
-    
-    // Hide the simulation region switches if they exist
+    // Make sure simulation region switcher is visible (if it exists)
     if (simRegionContainer) {
-        simRegionContainer.style.display = 'none';
+        simRegionContainer.style.display = 'flex';
     }
     
     // ============================================
@@ -64,6 +58,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     const simAddFS = document.getElementById('sim-add-fs');
     const simulateBtn = document.getElementById('simulate-btn');
     const simResultsDiv = document.getElementById('sim-results');
+    const simUseRecommendedFS = document.getElementById('sim-use-recommended-fs');
+    const simUseMemFrags = document.getElementById('sim-use-mem-frags');
     
     // Get tab navigation elements
     const tabs = document.querySelectorAll('.tab');
@@ -1686,6 +1682,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             const selectedItem = simItemSelect.value;
             const selectedLevel = this.value;
             
+            // Show recommended FS container if a target level is selected
+            const recommendedFSContainer = document.getElementById('sim-recommended-fs-container');
+            if (recommendedFSContainer) {
+                if (selectedLevel) {
+                    recommendedFSContainer.style.display = 'block';
+                } else {
+                    recommendedFSContainer.style.display = 'none';
+                }
+            }
+            
             // Remove any existing softcap container
             const existingContainer = document.getElementById('sim-softcap-container');
             if (existingContainer) {
@@ -1698,6 +1704,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (softcapContainer) {
                 // Insert after the failstack input
                 simFailstack.parentNode.insertBefore(softcapContainer, simFailstack.nextSibling);
+            }
+            
+            // If recommended FS is checked, apply it
+            if (simUseRecommendedFS && simUseRecommendedFS.checked) {
+                applyRecommendedFSToSimulation();
             }
             
             // Check inputs to enable/disable simulate button
@@ -1791,7 +1802,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (simAttempts) simAttempts.addEventListener('input', checkSimulationInputs);
     
     // Simulation function
-    async function runSimulation(item, startLevel, targetLevel, startingFS, attempts, useCron, addFSAfterFail) {
+    async function runSimulation(item, startLevel, targetLevel, startingFS, attempts, useCron, useMemFrags, addFSAfterFail) {
         // Results to track
         const results = {
             item: item,
@@ -1801,6 +1812,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             successes: 0,
             failures: 0,
             totalCost: 0,
+            materialsCost: 0,
+            cronCost: 0,
+            memFragsCost: 0,
             attemptLog: []
         };
         
@@ -1808,15 +1822,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         let currentFS = startingFS;
         
         // Get the item cost once to use for all attempts (to avoid too many API calls)
-        const baseAttemptCost = await calculateAttemptCost(item, startLevel, useCron);
+        const baseAttemptCost = await calculateAttemptCost(item, startLevel, useCron, useMemFrags);
         
         for (let i = 0; i < attempts; i++) {
             // Calculate success chance using the utility function
             const successChance = calculateSuccessChance(item, startLevel, currentFS);
             
             // Use the pre-calculated cost
-            const totalAttemptCost = baseAttemptCost;
+            const totalAttemptCost = baseAttemptCost.totalCost;
             results.totalCost += totalAttemptCost;
+            results.materialsCost += baseAttemptCost.materialsCost;
+            results.cronCost += baseAttemptCost.cronCost;
+            results.memFragsCost += baseAttemptCost.memFragsCost;
             
             // Simulate the enhancement attempt (random roll)
             const roll = Math.random() * 100;
@@ -1877,13 +1894,23 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             createElement('p', {}, ''),
             
-            createElement('p', {}, '')
+            createElement('p', {}, ''),
+            
+            createElement('div', { className: 'cost-breakdown' }, '')
         ];
         
         // Set HTML content for elements that need it
         elements[1].innerHTML = `<strong>Item:</strong> ${results.item} (${formattedStartLevel} → ${formattedTargetLevel})`;
         elements[2].innerHTML = `<strong>Success Rate:</strong> ${successRate}% (${results.successes} successes out of ${results.attempts} attempts)`;
         elements[3].innerHTML = `<strong>Total Cost:</strong> ${results.totalCost.toLocaleString()} Silver`;
+        
+        // Add cost breakdown
+        elements[4].innerHTML = `
+            <div><strong>Materials:</strong> ${results.materialsCost.toLocaleString()} Silver</div>
+            <div><strong>Cron Stones:</strong> ${results.cronCost.toLocaleString()} Silver</div>
+            <div><strong>Memory Fragments:</strong> ${results.memFragsCost.toLocaleString()} Silver</div>
+            <div><em>Average Cost Per Attempt:</em> ${Math.round(results.totalCost / results.attempts).toLocaleString()} Silver</div>
+        `;
         
         // Add all elements to the results div
         elements.forEach(element => simResultsDiv.appendChild(element));
@@ -1974,10 +2001,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             const startingFS = parseInt(simFailstack.value);
             const attempts = parseInt(simAttempts.value);
             const useCron = simUseCron.checked;
+            const useMemFrags = simUseMemFrags.checked;
             const addFSAfterFail = simAddFS.checked;
             
             console.log('Simulation params:', {
-                item, targetLevel, startingFS, attempts, useCron, addFSAfterFail
+                item, targetLevel, startingFS, attempts, useCron, useMemFrags, addFSAfterFail
             });
             
             // Get the previous level based on the target level
@@ -1991,7 +2019,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 console.log('Running simulation with params:', {
                     item, startLevel, targetLevel, startingFS, attempts, useCron, addFSAfterFail
                 });
-                const simulationResults = await runSimulation(item, startLevel, targetLevel, startingFS, attempts, useCron, addFSAfterFail);
+                const simulationResults = await runSimulation(item, startLevel, targetLevel, startingFS, attempts, useCron, useMemFrags, addFSAfterFail);
                 console.log('Simulation completed:', simulationResults);
                 displaySimulationResults(simulationResults);
             } catch (error) {
@@ -2003,7 +2031,50 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
     
-    // Note: Simulation tab is currently hidden and will be implemented in a future update
+    // Apply recommended FS to the simulation tab
+    if (simUseRecommendedFS) {
+        simUseRecommendedFS.addEventListener('change', function() {
+            applyRecommendedFSToSimulation();
+        });
+    }
+    
+    /**
+     * Applies the recommended failstack value to the simulation tab's failstack input
+     */
+    function applyRecommendedFSToSimulation() {
+        if (!simUseRecommendedFS || !simItemSelect || !simTargetLevel || !simFailstack) return;
+        
+        const isChecked = simUseRecommendedFS.checked;
+        const selectedItem = simItemSelect.value;
+        const selectedLevel = simTargetLevel.value;
+        
+        if (!selectedItem || !selectedLevel) return;
+        
+        // Get the current level (one before the target)
+        const levels = enhancementLevels[selectedItem];
+        const targetIndex = levels.indexOf(selectedLevel);
+        
+        if (targetIndex <= 0) return;
+        
+        const currentLevel = levels[targetIndex - 1];
+        const recommendedFS = enhancementItemRequirements[selectedItem]?.[currentLevel]?.enhancementData?.recommendedFS || 0;
+        
+        if (isChecked && recommendedFS > 0) {
+            // Store the original value before applying recommended FS
+            simFailstack.dataset.originalValue = simFailstack.value;
+            // Set to recommended FS value
+            simFailstack.value = recommendedFS;
+            // Show recommended FS in placeholder
+            simFailstack.placeholder = `Recommended FS: ${recommendedFS}`;
+        } else if (!isChecked) {
+            // Restore original value
+            simFailstack.value = simFailstack.dataset.originalValue || '';
+            // Reset placeholder
+            simFailstack.placeholder = 'Enter failstack value';
+        }
+    }
+    
+    // Note: Simulation tab is now available for testing enhancement strategies
     // When ready to re-enable, remove the display:none style from:
     // 1. The tab element (.tab[data-tab="simulation"])
     // 2. The content element (#simulation-tab)
