@@ -47,29 +47,35 @@
             </div>
             
             <div class="cost-region-container">
-                <div class="cron-options-container" style="margin-bottom: 10px;">
-                    <div style="font-weight: bold; margin-bottom: 5px;">Cron Stone Options:</div>
-                    <div class="checkbox-container" style="margin-left: 15px;">
-                        <input type="checkbox" id="use-cron" name="use-cron">
-                        <label for="use-cron">Regular Cron Stone (3M silver per cron)</label>
+                <!-- Region Switch - Moved to the top and centered -->
+                <div class="region-switch-container">
+                    <div class="region-switch">
+                        <span class="region-label">Market Region:</span>
+                        <button id="region-eu" class="active">EU</button>
+                        <button id="region-na">NA</button>
+                    </div>
+                </div>
+                
+                <div class="options-container">
+                    <div class="cron-options-container">
+                        <div style="font-weight: bold; margin-bottom: 5px;">Cron Stone Options:</div>
+                        <div class="cron-column">
+                            <div class="checkbox-container">
+                                <input type="checkbox" id="use-cron" name="use-cron">
+                                <label for="use-cron">Vendor Cron Stone (3M silver per cron)</label>
+                            </div>
+                            
+                            <div class="checkbox-container costume-cron">
+                                <input type="checkbox" id="use-costume-cron" name="use-costume-cron">
+                                <label for="use-costume-cron">Costume Cron Stone (2,185,297 silver per cron)</label>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div class="checkbox-container" style="margin-left: 15px;">
-                        <input type="checkbox" id="use-costume-cron" name="use-costume-cron">
-                        <label for="use-costume-cron">Costume Cron Stone (2,185,297 silver per cron)</label>
+                    <div class="checkbox-container mem-frag-container">
+                        <input type="checkbox" id="use-mem-frags" name="use-mem-frags">
+                        <label for="use-mem-frags">Include memory fragment costs for durability repair</label>
                     </div>
-                </div>
-                
-                <div class="checkbox-container">
-                    <input type="checkbox" id="use-mem-frags" name="use-mem-frags">
-                    <label for="use-mem-frags">Include memory fragment costs for durability repair</label>
-                </div>
-                
-                <!-- Region Switch -->
-                <div class="region-switch">
-                    <span class="region-label">Market Region:</span>
-                    <button id="region-eu" class="active">EU</button>
-                    <button id="region-na">NA</button>
                 </div>
             </div>
             
@@ -116,16 +122,18 @@
             </div>
             
             <div class="cost-region-container">
-                <div class="cron-options-container" style="margin-bottom: 10px;">
+                <div class="cron-options-container">
                     <div style="font-weight: bold; margin-bottom: 5px;">Cron Stone Options:</div>
-                    <div class="checkbox-container" style="margin-left: 15px;">
-                        <input type="checkbox" id="sim-use-cron" name="sim-use-cron">
-                        <label for="sim-use-cron">Regular Cron Stone (3M silver per cron)</label>
-                    </div>
-                    
-                    <div class="checkbox-container" style="margin-left: 15px;">
-                        <input type="checkbox" id="sim-use-costume-cron" name="sim-use-costume-cron">
-                        <label for="sim-use-costume-cron">Costume Cron Stone (2,185,297 silver per cron)</label>
+                    <div class="cron-column">
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="sim-use-cron" name="sim-use-cron">
+                            <label for="sim-use-cron">Vendor Cron Stone (3M silver per cron)</label>
+                        </div>
+                        
+                        <div class="checkbox-container costume-cron">
+                            <input type="checkbox" id="sim-use-costume-cron" name="sim-use-costume-cron">
+                            <label for="sim-use-costume-cron">Costume Cron Stone (2,185,297 silver per cron)</label>
+                        </div>
                     </div>
                 </div>
                 

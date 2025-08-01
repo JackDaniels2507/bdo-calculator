@@ -1106,7 +1106,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                             if (useCostumeCronCheckbox && useCostumeCronCheckbox.checked) {
                                 cronPrice = 2185297; // Costume cron price
                             } else {
-                                cronPrice = 3000000; // Regular cron price (3 million per cron stone)
+                                cronPrice = 3000000; // Vendor cron price (3 million per cron stone)
                             }
                             
                             const levelCronCost = cronPrice * levelCronCount;
@@ -1544,7 +1544,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Different note based on whether cron stones are used
         if ((useCronCheckbox && useCronCheckbox.checked) || (useCostumeCronCheckbox && useCostumeCronCheckbox.checked)) {
-            let cronType = useCronCheckbox && useCronCheckbox.checked ? "Regular Cron Stones (3M silver per cron)" : "Costume Cron Stones (2,185,297 silver per cron)";
+            let cronType = useCronCheckbox && useCronCheckbox.checked ? "Vendor Cron Stones (3M silver per cron)" : "Costume Cron Stones (2,185,297 silver per cron)";
             note.innerHTML = `<strong>Note:</strong> These calculations include ${cronType} costs. Cron Stones prevent item downgrades but durability is still lost.<br>` +
                            '<strong>Failstack Increments:</strong> When using cron stones, the calculator simulates automatic failstack increments that would naturally occur from failed attempts. This is why failstack values may be higher than what you entered.<br>' +
                            '<span style="color: #ff0000; font-weight: bold; font-size: 1.1em;">WARNING: Failstack cost is not counted!!!</span>';
