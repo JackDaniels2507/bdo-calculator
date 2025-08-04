@@ -7,6 +7,20 @@
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('BDO Enhancement Calculator initializing...');
     
+    // Create the failstack info element that will explain the automatic failstack increment with cron stones
+    const simFailstackContainer = document.getElementById('sim-failstack-container');
+    if (simFailstackContainer) {
+        const fsInfoElement = document.createElement('small');
+        fsInfoElement.id = 'sim-fs-info';
+        fsInfoElement.style.display = 'none';
+        fsInfoElement.style.marginTop = '5px';
+        fsInfoElement.style.fontStyle = 'italic';
+        simFailstackContainer.appendChild(fsInfoElement);
+        
+        // The "Add FS After Failed Attempt" checkbox has been removed as this functionality
+        // is now automatically handled when using cron stones
+    }
+    
     // Get simulation tab and related elements
     const simulationTab = document.querySelector('.tab[data-tab="simulation"]');
     const simulationContent = document.getElementById('simulation-tab');
@@ -55,7 +69,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const simAttempts = document.getElementById('sim-attempts');
     const simUseCron = document.getElementById('sim-use-cron');
     const simUseCostumeCron = document.getElementById('sim-use-costume-cron');
-    const simAddFS = document.getElementById('sim-add-fs');
+    // Removed simAddFS - automatic failstack increment is now tied to using cron stones
     const simulateBtn = document.getElementById('simulate-btn');
     const simResultsDiv = document.getElementById('sim-results');
     const simUseRecommendedFS = document.getElementById('sim-use-recommended-fs');
@@ -89,11 +103,28 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     // Same for simulation tab
+    // Helper function to update the Failstack info message
+    function updateFailstackInfo() {
+        const fsInfoElement = document.getElementById('sim-fs-info');
+        if (!fsInfoElement) return;
+        
+        const useCron = (simUseCron && simUseCron.checked) || (simUseCostumeCron && simUseCostumeCron.checked);
+        
+        if (useCron) {
+            fsInfoElement.textContent = "Failstack will automatically increase by +1 after each failed attempt when using Cron Stones";
+            fsInfoElement.style.color = "#2ecc71"; // Green color
+            fsInfoElement.style.display = "block";
+        } else {
+            fsInfoElement.style.display = "none";
+        }
+    }
+    
     if (simUseCron) {
         simUseCron.addEventListener('change', function() {
             if (this.checked && simUseCostumeCron) {
                 simUseCostumeCron.checked = false;
             }
+            updateFailstackInfo();
         });
     }
     
@@ -102,8 +133,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (this.checked && simUseCron) {
                 simUseCron.checked = false;
             }
+            updateFailstackInfo();
         });
     }
+    
+    // Call updateFailstackInfo after a short delay to ensure all DOM elements are properly initialized
+    setTimeout(updateFailstackInfo, 100);
     
     // Log which elements were found or not found for debugging
     console.log('DOM elements found:', {
@@ -122,7 +157,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             simFailstack: !!simFailstack,
             simAttempts: !!simAttempts,
             simUseCron: !!simUseCron,
-            simAddFS: !!simAddFS,
+            // simAddFS removed - now using cron stones for automatic FS increment
             simulateBtn: !!simulateBtn,
             simResultsDiv: !!simResultsDiv
         },
@@ -563,7 +598,7 @@ document.addEventListener('DOMContentLoaded', async function() {
      * @param {boolean} useMemFrags - Whether to include memory fragment costs
      * @returns {Promise<Object>} - The total cost and details of the attempt
      */
-    async function calculateAttemptCost(item, level, useCron, useMemFrags) {
+    async function calculateAttemptCost(item, level, useCron, useMemFrags, isUsingCostumeCron = null) {
         const requirements = enhancementItemRequirements[item]?.[level];
         
         // Calculate materials cost
@@ -598,10 +633,20 @@ document.addEventListener('DOMContentLoaded', async function() {
             const cronCount = requirements.cronStones || 0;
             let cronPrice;
             
-            if (useCostumeCronCheckbox && useCostumeCronCheckbox.checked) {
-                cronPrice = 2185297;
+            // If isUsingCostumeCron is explicitly provided (from runSimulation), use that value
+            if (isUsingCostumeCron !== null) {
+                cronPrice = isUsingCostumeCron ? 2185297 : 3000000; // Use specified cron stone type
             } else {
-                cronPrice = 3000000; 
+                // Otherwise determine based on UI state
+                // Check which mode is active (main calculator or simulation)
+                const isSimulation = document.querySelector('.tab-content:not(.hidden)').id === 'simulation-tab';
+                
+                if ((isSimulation && simUseCostumeCron && simUseCostumeCron.checked) || 
+                    (!isSimulation && useCostumeCronCheckbox && useCostumeCronCheckbox.checked)) {
+                    cronPrice = 2185297; // Costume Cron Stone price
+                } else {
+                    cronPrice = 3000000; // Vendor Cron Stone price
+                }
             }
             
             cronCost = cronCount * cronPrice;
@@ -1646,14 +1691,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     // ============================================
     // Simulator Functionality
     // ============================================
-    // NOTE: The simulation tab is currently hidden and will be implemented in a future update
-    // The code below is preserved for when the simulation functionality is fully implemented
     
     // Event listener for simulation item selection
     if (simItemSelect) {
         simItemSelect.addEventListener('change', function() {
             const selectedItem = this.value;
-            console.log('Simulation item selected:', selectedItem);
             
             // Reset dependent fields
             simTargetLevel.innerHTML = '<option value="">-- Select Level --</option>';
@@ -1802,7 +1844,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (simAttempts) simAttempts.addEventListener('input', checkSimulationInputs);
     
     // Simulation function
-    async function runSimulation(item, startLevel, targetLevel, startingFS, attempts, useCron, useMemFrags, addFSAfterFail) {
+    async function runSimulation(item, startLevel, targetLevel, startingFS, attempts, useCron, useMemFrags, praygeOption, isUsingCostumeCron = false) {
         // Results to track
         const results = {
             item: item,
@@ -1815,18 +1857,35 @@ document.addEventListener('DOMContentLoaded', async function() {
             materialsCost: 0,
             cronCost: 0,
             memFragsCost: 0,
-            attemptLog: []
+            attemptLog: [],
+            praygeOption: praygeOption, // Track which streamer the user prayed to
+            isUsingCostumeCron: isUsingCostumeCron // Track if using costume cron stones
         };
         
         // Run the simulation for the specified number of attempts
         let currentFS = startingFS;
         
         // Get the item cost once to use for all attempts (to avoid too many API calls)
-        const baseAttemptCost = await calculateAttemptCost(item, startLevel, useCron, useMemFrags);
+        // Pass isUsingCostumeCron to calculateAttemptCost so it can use the correct cron stone price
+        const baseAttemptCost = await calculateAttemptCost(item, startLevel, useCron, useMemFrags, isUsingCostumeCron);
         
         for (let i = 0; i < attempts; i++) {
-            // Calculate success chance using the utility function
-            const successChance = calculateSuccessChance(item, startLevel, currentFS);
+            // Calculate base success chance using the utility function
+            let successChance = calculateSuccessChance(item, startLevel, currentFS);
+            
+            // Apply the streamer luck modifier if selected (Easter egg)
+            let originalChance = successChance;
+            let streamEffect = '';
+            
+            if (praygeOption === 'rapolas') {
+                // MrRapolas gives +70% luck - multiply the success rate by 1.7, cap at 90%
+                successChance = Math.min(successChance * 1.7, 90);
+                streamEffect = '+MrRapolas';
+            } else if (praygeOption === 'biceptimus') {
+                // BiceptimusPrime gives -70% luck - multiply the success rate by 0.3
+                successChance = Math.max(successChance * 0.3, 0.1); // Minimum 0.1% chance
+                streamEffect = '-BiceptimusPrime';
+            }
             
             // Use the pre-calculated cost
             const totalAttemptCost = baseAttemptCost.totalCost;
@@ -1846,6 +1905,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     attempt: i + 1,
                     failstack: currentFS,
                     successChance: successChance.toFixed(3),
+                    originalChance: originalChance.toFixed(3),
+                    streamEffect: streamEffect,
                     result: 'SUCCESS',
                     cost: totalAttemptCost
                 });
@@ -1858,12 +1919,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                     attempt: i + 1,
                     failstack: currentFS,
                     successChance: successChance.toFixed(3),
+                    originalChance: originalChance.toFixed(3),
+                    streamEffect: streamEffect,
                     result: 'FAIL',
                     cost: totalAttemptCost
                 });
                 
-                // Increase failstack if option is enabled
-                if (addFSAfterFail) {
+                // Increase failstack automatically when cron stones are used
+                if (useCron) {
                     currentFS += 1;
                 }
             }
@@ -1877,7 +1940,7 @@ document.addEventListener('DOMContentLoaded', async function() {
      * @param {Object} results - The simulation results object
      */
     function displaySimulationResults(results) {
-        console.log('Displaying simulation results:', results);
+        // Clear the results div before adding new content
         simResultsDiv.innerHTML = '';
         simResultsDiv.className = 'results-container show';
         
@@ -1892,12 +1955,63 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             createElement('p', {}, ''),
             
-            createElement('p', {}, ''),
-            
-            createElement('p', {}, ''),
-            
-            createElement('div', { className: 'cost-breakdown' }, '')
+            createElement('p', {}, '')
         ];
+        
+        // Create streamer luck banner if applicable - as a separate element
+        if (results.praygeOption && results.praygeOption !== 'none') {
+            // Add animation keyframes to the document if they don't exist
+            if (!document.getElementById('pulse-animation')) {
+                const styleElement = document.createElement('style');
+                styleElement.id = 'pulse-animation';
+                styleElement.textContent = `
+                    @keyframes pulse {
+                        0% { opacity: 1; transform: scale(1); }
+                        50% { opacity: 0.8; transform: scale(1.02); }
+                        100% { opacity: 1; transform: scale(1); }
+                    }
+                `;
+                document.head.appendChild(styleElement);
+            }
+            
+            // Create the banner with class for identification
+            const banner = document.createElement('div');
+            banner.className = 'streamer-banner';
+            banner.style.padding = '15px';
+            banner.style.margin = '0 0 20px 0';
+            banner.style.borderRadius = '4px';
+            banner.style.fontWeight = 'bold';
+            banner.style.textAlign = 'center';
+            banner.style.fontSize = '20px';
+            banner.style.animation = 'pulse 2s infinite';
+            banner.style.display = 'block';
+            banner.style.width = '100%';
+            banner.style.boxSizing = 'border-box';
+            
+            if (results.praygeOption === "rapolas") {
+                banner.style.backgroundColor = "#2ecc71";
+                banner.style.color = "#fff";
+                banner.style.boxShadow = "0 0 10px #2ecc71";
+                banner.innerHTML = "🙏 Blessed by MrRapolas! 🍀";
+            } else if (results.praygeOption === "biceptimus") {
+                banner.style.backgroundColor = "#e74c3c";
+                banner.style.color = "#fff";
+                banner.style.boxShadow = "0 0 10px #e74c3c";
+                banner.innerHTML = "💀 Cursed by BiceptimusPrime! 💔";
+            }
+            
+            // Clear any existing banner
+            const existingBanner = simResultsDiv.querySelector('.streamer-banner');
+            if (existingBanner) {
+                existingBanner.remove();
+            }
+            
+            // Insert banner at the beginning of the results
+            simResultsDiv.insertBefore(banner, simResultsDiv.firstChild);
+        }
+        
+        elements.push(createElement('p', {}, ''));
+        elements.push(createElement('div', { className: 'cost-breakdown' }, ''));
         
         // Set HTML content for elements that need it
         elements[1].innerHTML = `<strong>Item:</strong> ${results.item} (${formattedStartLevel} → ${formattedTargetLevel})`;
@@ -1905,9 +2019,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         elements[3].innerHTML = `<strong>Total Cost:</strong> ${results.totalCost.toLocaleString()} Silver`;
         
         // Add cost breakdown
+        const cronTypeText = results.isUsingCostumeCron ? 
+            "Costume Cron Stones (2,185,297 silver each)" : 
+            "Vendor Cron Stones (3,000,000 silver each)";
+        
         elements[4].innerHTML = `
             <div><strong>Materials:</strong> ${results.materialsCost.toLocaleString()} Silver</div>
-            <div><strong>Cron Stones:</strong> ${results.cronCost.toLocaleString()} Silver</div>
+            <div><strong>Cron Stones:</strong> ${results.cronCost.toLocaleString()} Silver ${results.cronCost > 0 ? `<span style="color: #888; font-style: italic; font-size: 0.9em;">(${cronTypeText})</span>` : ''}</div>
             <div><strong>Memory Fragments:</strong> ${results.memFragsCost.toLocaleString()} Silver</div>
             <div><em>Average Cost Per Attempt:</em> ${Math.round(results.totalCost / results.attempts).toLocaleString()} Silver</div>
         `;
@@ -1930,7 +2048,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Create header row
         const thead = document.createElement('thead');
         const headerRow = document.createElement('tr');
-        ['Attempt', 'Failstack', 'Success Chance', 'Result', 'Cost'].forEach(header => {
+        
+        let headers = ['Attempt', 'Failstack', 'Chance'];
+        
+        // Add streamer effect column if a streamer was selected
+        if (results.praygeOption && results.praygeOption !== 'none') {
+            headers.push('Streamer Effect');
+        }
+        
+        // Add remaining standard headers
+        headers = headers.concat(['Result', 'Cost']);
+        
+        headers.forEach(header => {
             const th = document.createElement('th');
             th.textContent = header;
             th.style.padding = '8px';
@@ -1945,40 +2074,67 @@ document.addEventListener('DOMContentLoaded', async function() {
         const tbody = document.createElement('tbody');
         results.attemptLog.forEach(log => {
             const row = document.createElement('tr');
+            const cells = [];
             
+            // 1. Attempt cell
             const attemptCell = document.createElement('td');
             attemptCell.textContent = log.attempt;
             attemptCell.style.padding = '8px';
             attemptCell.style.borderBottom = '1px solid #333';
+            cells.push(attemptCell);
             
+            // 2. Failstack cell
             const fsCell = document.createElement('td');
             fsCell.textContent = log.failstack;
             fsCell.style.padding = '8px';
             fsCell.style.borderBottom = '1px solid #333';
+            cells.push(fsCell);
             
+            // 3. Always add Chance cell (renamed from Original Chance)
             const chanceCell = document.createElement('td');
-            chanceCell.textContent = `${log.successChance}%`;
+            chanceCell.textContent = `${log.originalChance}%`;
             chanceCell.style.padding = '8px';
             chanceCell.style.borderBottom = '1px solid #333';
+            // Use normal color since this is now a standard column
+            cells.push(chanceCell);
             
+            // 4. If prayge option is selected, add Streamer Effect cell
+            if (results.praygeOption && results.praygeOption !== 'none') {
+                // Streamer effect cell
+                const effectCell = document.createElement('td');
+                if (log.streamEffect) {
+                    const isPositive = log.streamEffect.includes('+');
+                    effectCell.style.color = isPositive ? '#2ecc71' : '#e74c3c';
+                    effectCell.style.fontWeight = 'bold';
+                    
+                    // Just show the streamer name without any extra text
+                    effectCell.textContent = isPositive ? 'MrRapolas' : 'BiceptimusPrime';
+                } else {
+                    effectCell.textContent = '-';
+                }
+                effectCell.style.padding = '8px';
+                effectCell.style.borderBottom = '1px solid #333';
+                cells.push(effectCell);
+            }
+            
+            // 5. Result cell
             const resultCell = document.createElement('td');
             resultCell.textContent = log.result;
             resultCell.style.padding = '8px';
             resultCell.style.borderBottom = '1px solid #333';
             resultCell.style.color = log.result === 'SUCCESS' ? '#4CAF50' : '#F44336';
             resultCell.style.fontWeight = 'bold';
+            cells.push(resultCell);
             
+            // 6. Cost cell
             const costCell = document.createElement('td');
             costCell.textContent = log.cost.toLocaleString() + ' Silver';
             costCell.style.padding = '8px';
             costCell.style.borderBottom = '1px solid #333';
+            cells.push(costCell);
             
-            row.appendChild(attemptCell);
-            row.appendChild(fsCell);
-            row.appendChild(chanceCell);
-            row.appendChild(resultCell);
-            row.appendChild(costCell);
-            
+            // Add all cells to the row in the correct order
+            cells.forEach(cell => row.appendChild(cell));
             tbody.appendChild(row);
         });
         table.appendChild(tbody);
@@ -1990,37 +2146,44 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Event listener for simulate button
     if (simulateBtn) {
         simulateBtn.addEventListener('click', async function() {
-            console.log('Simulate button clicked');
-            
-            // Show loading indicator
-            simResultsDiv.innerHTML = '<p>Running simulation and fetching market data, please wait...</p>';
-            simResultsDiv.className = 'results-container show';
+            // Clear any previous results
+            simResultsDiv.innerHTML = '';
+            simResultsDiv.className = 'results-container';
             
             const item = simItemSelect.value;
             const targetLevel = simTargetLevel.value;
             const startingFS = parseInt(simFailstack.value);
             const attempts = parseInt(simAttempts.value);
-            const useCron = simUseCron.checked;
+            const useCron = simUseCron.checked || simUseCostumeCron.checked;
             const useMemFrags = simUseMemFrags.checked;
-            const addFSAfterFail = simAddFS.checked;
-            
-            console.log('Simulation params:', {
-                item, targetLevel, startingFS, attempts, useCron, useMemFrags, addFSAfterFail
-            });
+            // Track which cron stone option is being used
+            const isUsingCostumeCron = simUseCostumeCron && simUseCostumeCron.checked;
+            // Removed addFSAfterFail checkbox - failstacks will automatically increment when using cron stones
             
             // Get the previous level based on the target level
             const levels = enhancementLevels[item];
             const targetIndex = levels.indexOf(targetLevel);
             const startLevel = levels[targetIndex - 1];
-            console.log('Start level:', startLevel);
             
             // Run the simulation and display results
             try {
-                console.log('Running simulation with params:', {
-                    item, startLevel, targetLevel, startingFS, attempts, useCron, addFSAfterFail
-                });
-                const simulationResults = await runSimulation(item, startLevel, targetLevel, startingFS, attempts, useCron, useMemFrags, addFSAfterFail);
-                console.log('Simulation completed:', simulationResults);
+                // Show a loading message
+                simResultsDiv.innerHTML = '<p>Running simulation, please wait...</p>';
+                simResultsDiv.className = 'results-container show';
+                
+                // Get the prayge option selected
+                const praygeOptions = document.getElementsByName('prayge');
+                let praygeOption = 'none';
+                
+                for (let i = 0; i < praygeOptions.length; i++) {
+                    if (praygeOptions[i].checked) {
+                        praygeOption = praygeOptions[i].value;
+                        break;
+                    }
+                }
+                
+                // Use the isUsingCostumeCron variable we defined earlier
+                const simulationResults = await runSimulation(item, startLevel, targetLevel, startingFS, attempts, useCron, useMemFrags, praygeOption, isUsingCostumeCron);
                 displaySimulationResults(simulationResults);
             } catch (error) {
                 console.error('Error in simulation:', error);
@@ -2074,9 +2237,232 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // Note: Simulation tab is now available for testing enhancement strategies
-    // When ready to re-enable, remove the display:none style from:
-    // 1. The tab element (.tab[data-tab="simulation"])
-    // 2. The content element (#simulation-tab)
-    // 3. The region switch container (.sim-region-switch)
+    // ============================================
+    // Map Easter Egg Functionality
+    // ============================================
+    
+    // Get map related elements
+    const selectLocationBtn = document.getElementById('select-location-btn');
+    const mapModal = document.getElementById('map-modal');
+    const closeModalBtn = document.querySelector('.close-modal');
+    const confirmLocationBtn = document.getElementById('confirm-location-btn');
+    const bdoMap = document.getElementById('bdo-map');
+    const locationMarker = document.getElementById('selected-location-marker');
+    
+    // Variables to track location
+    let selectedLocation = null;
+    
+    // Event listener for the "Select Location" button
+    if (selectLocationBtn) {
+        selectLocationBtn.addEventListener('click', function() {
+            // Show the map modal
+            mapModal.style.display = 'block';
+        });
+    }
+    
+    // Event listener for the close button
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', function() {
+            mapModal.style.display = 'none';
+        });
+    }
+    
+    // Event listener for clicking on the map
+    if (bdoMap) {
+        bdoMap.addEventListener('click', function(event) {
+            // Calculate position relative to the map
+            const rect = bdoMap.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            // Store selected coordinates
+            selectedLocation = {
+                x: (x / rect.width) * 100, // Store as percentage
+                y: (y / rect.height) * 100
+            };
+            
+            // Update marker position
+            locationMarker.style.left = `${selectedLocation.x}%`;
+            locationMarker.style.top = `${selectedLocation.y}%`;
+            locationMarker.style.display = 'block';
+            
+            // Enable confirm button
+            confirmLocationBtn.disabled = false;
+            
+            console.log(`Location selected: ${selectedLocation.x.toFixed(2)}%, ${selectedLocation.y.toFixed(2)}%`);
+        });
+    }
+    
+    // Event listener for the confirm button
+    if (confirmLocationBtn) {
+        confirmLocationBtn.addEventListener('click', function() {
+            // Close the modal
+            mapModal.style.display = 'none';
+            // No toast notification - just close the modal
+        });
+    }
+    
+    // Close modal when clicking outside of it
+    window.addEventListener('click', function(event) {
+        if (event.target === mapModal) {
+            mapModal.style.display = 'none';
+        }
+    });
+    
+    // ============================================
+    // Zodiac Easter Egg Functionality
+    // ============================================
+    
+    // Get zodiac select element and related elements
+    const zodiacSelect = document.getElementById('zodiac-select');
+    const zodiacIcon = document.getElementById('zodiac-icon');
+    const zodiacDesc = document.getElementById('zodiac-desc');
+    
+    // Define BDO zodiac signs data with icon URLs and emoji fallbacks
+    const zodiacData = [
+        {
+            name: "SHIELD",
+            iconUrl: "https://static.wikia.nocookie.net/blackdesert/images/a/a2/Customize_zodiac_m_shield.png/revision/latest?cb=20230621162818",
+            emoji: "🛡️",
+            description: "Rational, disciplined, methodical.",
+            color: "#3498db" // Blue
+        },
+        {
+            name: "GIANT",
+            iconUrl: "https://static.wikia.nocookie.net/blackdesert/images/b/b9/Customize_zodiac_m_giant.png/revision/latest?cb=20230621162814",
+            emoji: "🏔️",
+            description: "Dreamer, ambitious, swift, an observer.",
+            color: "#6d4c41" // Dark brown
+        },
+        {
+            name: "CAMEL",
+            iconUrl: "https://static.wikia.nocookie.net/blackdesert/images/c/cd/Customize_zodiac_m_camel.png/revision/latest?cb=20230621162821",
+            emoji: "🐪",
+            description: "Perseverance and patience, gentle, talented.",
+            color: "#d2b48c" // Tan
+        },
+        {
+            name: "BLACK DRAGON",
+            iconUrl: "https://static.wikia.nocookie.net/blackdesert/images/e/ed/Customize_zodiac_m_dragon.png/revision/latest?cb=20230621162810",
+            emoji: "🐉",
+            description: "Wealth and fame, noble, delicate, sensitive, sociable.",
+            color: "#2c3e50" // Dark blue/black
+        },
+        {
+            name: "TREANT OWL",
+            iconUrl: "https://static.wikia.nocookie.net/blackdesert/images/6/61/Customize_zodiac_m_entowl.png/revision/latest?cb=20230621162813",
+            emoji: "🦉",
+            description: "Simple, genuine, knowledgable, a genius or an idiot.",
+            color: "#9b59b6" // Purple
+        },
+        {
+            name: "ELEPHANT",
+            iconUrl: "https://static.wikia.nocookie.net/blackdesert/images/4/47/Customize_zodiac_m_elephant.png/revision/latest?cb=20230621162812",
+            emoji: "🐘",
+            description: "Honorable, faithful, obtuse, dedicated, trusted.",
+            color: "#7f8c8d" // Gray
+        },
+        {
+            name: "WAGON",
+            iconUrl: "https://static.wikia.nocookie.net/blackdesert/images/5/50/Customize_zodiac_m_carriage.png/revision/latest?cb=20230621162809",
+            emoji: "🛒",
+            description: "Takes action, born to wealth, precious, selfish.",
+            color: "#8b4513" // Brown
+        },
+        {
+            name: "SEALING STONE",
+            iconUrl: "https://static.wikia.nocookie.net/blackdesert/images/4/47/Customize_zodiac_m_blackstone.png/revision/latest?cb=20230621162820",
+            emoji: "💎",
+            description: "Careful, eccentric, secretive, short-lived.",
+            color: "#34495e" // Dark slate
+        },
+        {
+            name: "GOBLIN",
+            iconUrl: "https://static.wikia.nocookie.net/blackdesert/images/f/f5/Customize_zodiac_m_goblin.png/revision/latest?cb=20230621162815",
+            emoji: "👺",
+            description: "Linguist, strong beliefs, intellectual, materialistic, wise.",
+            color: "#27ae60" // Green
+        },
+        {
+            name: "KEY",
+            iconUrl: "https://static.wikia.nocookie.net/blackdesert/images/c/c8/Customize_zodiac_m_key.png/revision/latest?cb=20230621162817",
+            emoji: "🔑",
+            description: "Focused, thirst for knowledge, relaxed, determined.",
+            color: "#f1c40f" // Gold
+        },
+        {
+            name: "HAMMER",
+            iconUrl: "https://static.wikia.nocookie.net/blackdesert/images/e/e9/Customize_zodiac_m_hammer.png/revision/latest?cb=20230621162816",
+            emoji: "🔨",
+            description: "Brave, conservative, righteous, collaborative, hot-blooded.",
+            color: "#e74c3c" // Red
+        },
+        {
+            name: "BOAT",
+            iconUrl: "https://static.wikia.nocookie.net/blackdesert/images/b/b1/Customize_zodiac_m_ship.png/revision/latest?cb=20230621162819",
+            emoji: "⛵",
+            description: "Enjoys art, optimistic, free, a wanderer.",
+            color: "#00bcd4" // Cyan
+        }
+    ];
+    
+    // Create a display for the zodiac icons in the console for reference
+    function showZodiacIconsInfo() {
+        console.log('%c BDO Zodiac Signs ', 'background: #2c3e50; color: white; padding: 2px 5px; border-radius: 3px;');
+        console.log('To see the original BDO zodiac icons, visit: https://blackdesertonline.fandom.com/wiki/Horoscopes');
+        
+        // Show all zodiac data in a formatted way in the console
+        zodiacData.forEach((zodiac, index) => {
+            console.log(
+                `%c ${zodiac.emoji} ${zodiac.name} `, 
+                `background: ${zodiac.color}; color: white; padding: 2px 5px; border-radius: 3px;`,
+                zodiac.description
+            );
+        });
+    }
+    
+    // Log zodiac info to console once when the page loads
+    showZodiacIconsInfo();
+    
+    // Add event listener for zodiac selection
+    if (zodiacSelect) {
+        zodiacSelect.addEventListener('change', function() {
+            const selectedZodiac = this.value;
+            
+            // Reset icon and description if no selection
+            if (!selectedZodiac) {
+                zodiacIcon.style.display = 'none';
+                zodiacDesc.style.display = 'none';
+                document.documentElement.style.setProperty('--accent-color', '#4CAF50'); // Default color
+                return;
+            }
+            
+            // Get data for the selected zodiac
+            const index = parseInt(selectedZodiac);
+            const zodiac = zodiacData[index];
+            
+            // Update UI with zodiac information
+            document.documentElement.style.setProperty('--accent-color', zodiac.color);
+            
+            // Update the existing icon span directly instead of replacing it
+            if (zodiacIcon) {
+                zodiacIcon.textContent = zodiac.emoji + " ";
+                zodiacIcon.style.fontSize = '24px';
+                zodiacIcon.title = zodiac.name;
+                zodiacIcon.style.display = 'inline';
+            }
+            
+            // Display description
+            zodiacDesc.textContent = zodiac.description;
+            zodiacDesc.style.display = 'block';
+            
+            // Log to console
+            console.log(`${zodiac.emoji} Zodiac selected: ${zodiac.name} - ${zodiac.description}`);
+        });
+    }
+    
+    // Tooltip functionality removed as requested
+    
+    // Function to show a toast notification with location info
+    // Toast function removed as requested
 });

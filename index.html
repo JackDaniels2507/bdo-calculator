@@ -158,15 +158,76 @@
                 </div>
             </div>
             
-            <div class="checkbox-container">
-                <input type="checkbox" id="sim-add-fs" name="sim-add-fs">
-                <label for="sim-add-fs">Add Failstack After Failed Attempt</label>
+            <!-- Removed "Add Failstack After Failed Attempt" checkbox as this is now automatic when using cron stones -->
+            
+            <div class="form-group" style="margin-top: 20px; border: 1px solid #444; padding: 15px; border-radius: 4px; background-color: #222;">
+                <div style="margin-bottom: 10px; font-weight: bold; color: #e0e0e0; border-bottom: 1px solid #555; padding-bottom: 5px;">
+                    Options for true BDO's players
+                </div>
+                
+                <div class="form-group location-button-container" style="margin-bottom: 15px;">
+                    <button id="select-location-btn">Select Location</button>
+                </div>
+                
+                <div class="form-group zodiac-container" style="display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center;">
+                        <select id="zodiac-select" style="width: auto; padding: 4px; background-color: #2a2a2a; color: #e0e0e0; border: 1px solid #444;">
+                            <option value="">-- BDO Zodiac --</option>
+                            <option value="0">SHIELD</option>
+                            <option value="1">GIANT</option>
+                            <option value="2">CAMEL</option>
+                            <option value="3">BLACK DRAGON</option>
+                            <option value="4">TREANT OWL</option>
+                            <option value="5">ELEPHANT</option>
+                            <option value="6">WAGON</option>
+                            <option value="7">SEALING STONE</option>
+                            <option value="8">GOBLIN</option>
+                            <option value="9">KEY</option>
+                            <option value="10">HAMMER</option>
+                            <option value="11">BOAT</option>
+                        </select>
+                        <span id="zodiac-icon" style="font-size: 24px; margin-left: 10px; display: none;"></span>
+                        <span id="zodiac-desc" style="font-size: 0.8em; margin-left: 10px; color: #aaa; display: none;"></span>
+                    </div>
+                </div>
+                
+                <div class="form-group prayge-container" style="margin-bottom: 15px;">
+                    <div style="display: flex; gap: 15px;">
+                        <div>
+                            <input type="radio" id="prayge-none" name="prayge" value="none" checked>
+                            <label for="prayge-none">No Prayge</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="prayge-rapolas" name="prayge" value="rapolas">
+                            <label for="prayge-rapolas">Prayge to MrRapolas</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="prayge-biceptimus" name="prayge" value="biceptimus">
+                            <label for="prayge-biceptimus">Prayge to BiceptimusPrime</label>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <button id="simulate-btn" disabled>Run Simulation</button>
             
-            <div id="sim-results" class="results-container">
+            <div id="sim-results" class="results-container">>
                 <!-- Simulation results will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Modal -->
+    <div id="map-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Select a Location on the Map</h2>
+            <div class="map-container">
+                <img id="bdo-map" src="bdomap.webp" alt="Black Desert Online Map">
+                <div id="selected-location-marker" class="location-marker"></div>
+            </div>
+            <div class="modal-footer">
+                <button id="confirm-location-btn">Confirm Location</button>
             </div>
         </div>
     </div>
