@@ -7,6 +7,9 @@
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('BDO Enhancement Calculator initializing...');
     
+    // Fetch all prices when the application starts
+    fetchAllPricesOnStartup();
+    
     // Create the failstack info element that will explain the automatic failstack increment with cron stones
     const simFailstackContainer = document.getElementById('sim-failstack-container');
     if (simFailstackContainer) {
@@ -69,7 +72,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     const simAttempts = document.getElementById('sim-attempts');
     const simUseCron = document.getElementById('sim-use-cron');
     const simUseCostumeCron = document.getElementById('sim-use-costume-cron');
-    // Removed simAddFS - automatic failstack increment is now tied to using cron stones
     const simulateBtn = document.getElementById('simulate-btn');
     const simResultsDiv = document.getElementById('sim-results');
     const simUseRecommendedFS = document.getElementById('sim-use-recommended-fs');
@@ -157,7 +159,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             simFailstack: !!simFailstack,
             simAttempts: !!simAttempts,
             simUseCron: !!simUseCron,
-            // simAddFS removed - now using cron stones for automatic FS increment
             simulateBtn: !!simulateBtn,
             simResultsDiv: !!simResultsDiv
         },
@@ -449,6 +450,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         752023: "Mass of Pure Magic"
     };
     
+    // Cache control to reduce network requests
+    const priceCache = {
+        lastFetch: 0, // Timestamp of last fetch
+        cacheDuration: 30 * 60 * 1000, // 30 minutes in milliseconds
+    };
+    
     // Market prices with built-in defaults
     // This will be used both as a cache for fetched prices and as fallback values
     const marketPrices = {
@@ -706,10 +713,19 @@ document.addEventListener('DOMContentLoaded', async function() {
      */
     async function fetchItemPrice(region, itemId) {
         try {
-            // Always try to load price from GitHub-hosted JSON file first to get the most up-to-date values
+            // First check if we already have this price in our cache
+            if (marketPrices[region]?.[itemId]) {
+                // If cache is still fresh (less than cacheDuration), use cached value
+                const currentTime = Date.now();
+                if (currentTime - priceCache.lastFetch < priceCache.cacheDuration) {
+                    console.log(`Using cached price for item ${itemId} in ${region}: ${marketPrices[region][itemId]}`);
+                    return marketPrices[region][itemId];
+                }
+            }
+            
+            // Cache expired or price not found, try to fetch fresh data
             try {
                 const regionLower = region.toLowerCase();
-                // Update this to your actual GitHub username and repository name
                 const jsonUrl = `https://jackdaniels2507.github.io/bdo-calculator/bdo-prices-${regionLower}.json`;
                 
                 console.log(`Fetching latest price from ${jsonUrl} for item ${itemId}`);
@@ -721,6 +737,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
                 
                 const pricesData = await response.json();
+                
+                // Update cache timestamp when we successfully fetch data
+                priceCache.lastFetch = Date.now();
                 
                 if (pricesData[itemId] && pricesData[itemId].price) {
                     const price = pricesData[itemId].price;
@@ -1647,6 +1666,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             const selectedStartLevel = startLevelSelect.value;
             const selectedTargetLevel = targetLevelSelect.value;
             
+            // Prefetch prices if not in streaming mode
+            if (!document.getElementById('streaming-mode')?.checked) {
+                await prefetchCommonPrices();
+            }
+            
             // Get all failstack inputs
             const failstackInputs = failstackContainer.querySelectorAll('input[type="number"]');
             
@@ -1835,6 +1859,122 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         const isEnabled = itemSelected && targetSelected && failstackEntered && attemptsEntered;
         simulateBtn.disabled = !isEnabled;
+        
+        // If all required fields are selected, prefetch prices in the background
+        if (isEnabled) {
+            prefetchCommonPrices();
+        }
+    }
+    
+    /**
+     * Fetch all prices at application startup for both regions
+     */
+    async function fetchAllPricesOnStartup() {
+        console.log('Fetching all prices at startup...');
+        
+        try {
+            // Fetch prices for both regions
+            await Promise.all([
+                fetchRegionPrices('EU'),
+                fetchRegionPrices('NA')
+            ]);
+            
+            console.log('Successfully fetched all prices at startup');
+        } catch (error) {
+            console.warn('Failed to fetch all prices at startup:', error);
+            console.log('Using default values instead');
+        }
+    }
+    
+    /**
+     * Fetch prices for a specific region
+     * @param {string} region - The region to fetch prices for ('EU' or 'NA')
+     */
+    async function fetchRegionPrices(region) {
+        try {
+            const regionLower = region.toLowerCase();
+            const jsonUrl = `https://jackdaniels2507.github.io/bdo-calculator/bdo-prices-${regionLower}.json`;
+            
+            console.log(`Fetching ${region} prices from ${jsonUrl}`);
+            
+            const response = await fetch(jsonUrl);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch ${region} prices: ${response.status} ${response.statusText}`);
+            }
+            
+            const pricesData = await response.json();
+            
+            // Update cache timestamp
+            priceCache.lastFetch = Date.now();
+            
+            // Update all prices in our cache
+            Object.keys(pricesData).forEach(itemId => {
+                if (pricesData[itemId] && pricesData[itemId].price) {
+                    marketPrices[region][itemId] = pricesData[itemId].price;
+                    console.log(`Updated price for item ${itemId} in ${region}: ${pricesData[itemId].price}`);
+                }
+            });
+            
+            return true;
+        } catch (error) {
+            console.warn(`Failed to fetch ${region} prices:`, error);
+            return false;
+        }
+    }
+    
+    /**
+     * Prefetch commonly used prices in bulk to minimize individual network requests
+     * This can help reduce the number of separate network calls during calculations
+     */
+    async function prefetchCommonPrices() {
+        // Skip if we've recently fetched prices (within cacheDuration)
+        const currentTime = Date.now();
+        if (currentTime - priceCache.lastFetch < priceCache.cacheDuration) {
+            console.log('Using recently cached prices, skipping prefetch');
+            return;
+        }
+        
+        try {
+            console.log('Prefetching common prices in bulk...');
+            
+            // List of common item IDs used in calculations
+            const commonItemIds = [
+                44195, // Memory Fragment
+                4998,  // Sharp Black Crystal Shard
+                721003, // Caphras Stone
+                820979, // Essence of Dawn
+                820934  // Primordial Black Stone
+            ];
+            
+            const regionLower = currentRegion.toLowerCase();
+            const jsonUrl = `https://jackdaniels2507.github.io/bdo-calculator/bdo-prices-${regionLower}.json`;
+            
+            // Fetch all prices at once
+            const response = await fetch(jsonUrl);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch prices: ${response.status} ${response.statusText}`);
+            }
+            
+            const pricesData = await response.json();
+            
+            // Update cache timestamp
+            priceCache.lastFetch = currentTime;
+            
+            // Store all fetched prices in our cache
+            for (const itemId of commonItemIds) {
+                if (pricesData[itemId] && pricesData[itemId].price) {
+                    marketPrices[currentRegion][itemId] = pricesData[itemId].price;
+                    console.log(`Prefetched price for item ${itemId}: ${pricesData[itemId].price}`);
+                }
+            }
+            
+            console.log('Price prefetching complete');
+        } catch (error) {
+            console.warn('Failed to prefetch prices:', error);
+            // Silently fail - we'll use cached/default values
+        }
     }
     
     // Add event listeners to check simulation inputs
@@ -2308,6 +2448,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             mapModal.style.display = 'none';
         }
     });
+    
+    // Streaming mode removed
     
     // ============================================
     // Zodiac Easter Egg Functionality
