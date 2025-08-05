@@ -47,7 +47,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     const enhancementLevels = {
         'Kharazad': ['BASE', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'],
         'Sovereign': ['BASE', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'],
-        'Fallen God\'s Armor': ['BASE', 'I', 'II', 'III', 'IV', 'V']
+        'Fallen God\'s Armor': ['BASE', 'I', 'II', 'III', 'IV', 'V'],
+        'Preonne': ['BASE', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']
     };
     
     // ============================================
@@ -237,6 +238,80 @@ document.addEventListener('DOMContentLoaded', async function() {
     //   }
     // }
     const enhancementItemRequirements = {
+        'Preonne': {
+            durabilityLoss: 20,                          // Durability loss on failure for all Preonne enhancements
+            memFragPerDurability: 1,                     // Each memory fragment restores 1 durability point
+            'BASE': { 
+                materials: [{ itemId: 4987, count: 15 }],    // Essence of Dawn x1 for BASE->I
+                cronStones: 0,                               // No cron stones needed for BASE->I
+                enhancementData: {
+                    baseChance: 25.000
+                }
+            },
+            'I': { 
+                materials: [{ itemId: 4987, count: 16 }],    // Essence of Dawn x2 for I->II
+                cronStones: 360,                              // 120 cron stones for I->II
+                enhancementData: {
+                    baseChance: 20.000,
+                }
+            },
+            'II': { 
+                materials: [{ itemId: 4987, count: 17 }],    // Essence of Dawn x3 for II->III
+                cronStones: 670,                              // 280 cron stones for II->III
+                enhancementData: {
+                    baseChance: 15.000,
+                }
+            },
+            'III': { 
+                materials: [{ itemId: 4987, count: 18 }],    // Essence of Dawn x4 for III->IV
+                cronStones: 990,                              // 540 cron stones for III->IV
+                enhancementData: {
+                    baseChance: 13.000,
+                }
+            },
+            'IV': { 
+                materials: [{ itemId: 4987, count: 19 }],    // Essence of Dawn x6 for IV->V
+                cronStones: 1430,                             // 840 cron stones for IV->V
+                enhancementData: {
+                    baseChance: 11.000,
+                }
+            },
+            'V': { 
+                materials: [{ itemId: 4987, count: 20 }],    // Essence of Dawn x8 for V->VI
+                cronStones: 1890,                             // 1090 cron stones for V->VI
+                enhancementData: {
+                    baseChance: 10.000,
+                }
+            },
+            'VI': { 
+                materials: [{ itemId: 4987, count: 21 }],    // Essence of Dawn x10 for VI->VII
+                cronStones: 2390,                             // 1480 cron stones for VI->VII
+                enhancementData: {
+                    baseChance: 9.000,
+                }
+            },
+            'VII': { 
+                materials: [{ itemId: 4987, count: 22 }],    // Essence of Dawn x12 for VII->VIII
+                cronStones: 2690,                             // 1880 cron stones for VII->VIII
+                enhancementData: {
+                    baseChance: 8.500,
+                }
+            },
+            'VIII': { 
+                materials: [{ itemId: 4987, count: 23 }],    // Essence of Dawn x15 for VIII->IX
+                cronStones: 2750,                             // 2850 cron stones for VIII->IX
+                enhancementData: {
+                    baseChance: 8.000,
+                }
+            },
+            'IX': { 
+                materials: [{ itemId: 4987, count: 25 }],    // Essence of Dawn x18 for IX->X
+                cronStones: 2810,                             // 3650 cron stones for IX->X
+                enhancementData: {
+                    baseChance: 7.500,
+                }
+            },
+        },
         'Kharazad': {
             durabilityLoss: 20,                          // Durability loss on failure for all Kharazad enhancements
             memFragPerDurability: 1,                     // Each memory fragment restores 1 durability point
@@ -482,6 +557,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         721003: "Caphras Stone",
         44195: "Memory Fragment",
         4998: "Sharp Black Crystal Shard",
+        4987: "Concentrated Magical Black Gem",
         752023: "Mass of Pure Magic"
     };
     
@@ -507,6 +583,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             44195: 5000000, // 5 million silver based on provided default
             // Sharp Black Crystal Shard
             4998: 5000000, // 5 million silver based on estimated value
+            // Concentrated Magical Black Gem
+            4987: 15000000, // 15 million silver based on estimated value
             // Mass of Pure Magic
             752023: 500000 // 500 thousand silver based on estimated value
         },
@@ -523,6 +601,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             44195: 5000000, // 5 million silver based on provided default
             // Sharp Black Crystal Shard
             4998: 5000000, // 5 million silver based on estimated value
+            // Concentrated Magical Black Gem
+            4987: 15000000, // 15 million silver based on estimated value
             // Mass of Pure Magic
             752023: 500000 // 500 thousand silver based on estimated value
         }
@@ -586,6 +666,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         const itemData = enhancementItemRequirements[item] || {};
         const levelData = (itemData[level] && itemData[level].enhancementData) || defaultData;
         const baseRate = levelData.baseChance;
+        
+        // Preonne has fixed chance regardless of failstack
+        if (item === 'Preonne') {
+            return baseRate;
+        }
+        
         const successChance = Math.min(baseRate + (failstack * baseRate / 10), 90);
         
         return successChance;
@@ -595,10 +681,17 @@ document.addEventListener('DOMContentLoaded', async function() {
      * Calculates the exact average number of attempts needed with dynamic failstack increments
      * @param {number} baseRate - The base success rate percentage
      * @param {number} initialFailstack - The starting failstack value
+     * @param {boolean} isPreonne - Whether this calculation is for Preonne (fixed success rate)
      * @returns {number} - The exact average number of attempts needed
      */
-    function calculateExactAverageAttempts(baseRate, initialFailstack) {
+    function calculateExactAverageAttempts(baseRate, initialFailstack, isPreonne = false) {
         if (baseRate === 0) return 0;
+
+        // For Preonne, which has fixed success rate regardless of failstacks
+        if (isPreonne) {
+            // Simple geometric distribution formula: 1/p
+            return 100 / baseRate;
+        }
 
         const MAX_ATTEMPTS = 100000;
         let limit = MAX_ATTEMPTS;
@@ -1049,6 +1142,30 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const targetIndex = levels.indexOf(selectedTargetLevel);
                 const enhancementCount = targetIndex - startIndex;
                 
+                // For Preonne, we don't show failstack fields as it has fixed enhancement chance
+                if (selectedItem === 'Preonne') {
+                    // Display a message explaining that Preonne has fixed success rates
+                    const infoMessage = createElement('div', {
+                        className: 'preonne-info',
+                        style: {
+                            padding: '10px',
+                            margin: '10px 0',
+                            backgroundColor: '#222',  // Match app's background
+                            borderRadius: '5px',
+                            fontSize: '14px',
+                            color: '#ff5555',  // Red text for emphasis
+                            border: '1px solid #444',  // Add subtle border
+                            fontWeight: 'bold'  // Make it bold for visibility
+                        }
+                    }, 'Preonne has fixed enhancement chances regardless of failstacks.');
+                    
+                    failstackContainer.appendChild(infoMessage);
+                    
+                    // Enable calculate button
+                    calculateBtn.disabled = false;
+                    return;
+                }
+                
                 // Create a global softcap container with checkbox and label using our helper function
                 const globalSoftcapCheckbox = createElement('input', {
                     type: 'checkbox',
@@ -1196,8 +1313,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             let expectedAttempts = 0;
             let rawAttempts = 100 / successChance; // Standard attempt calculation
             
-            // Use exact calculation when cron stones are selected
-            if (useCronForThisLevel) {
+            // Special handling for Preonne which has fixed success rates
+            if (item === 'Preonne') {
+                if (useCronForThisLevel) {
+                    // For Preonne with cron stones, use simple formula
+                    expectedAttempts = 100 / baseChance;
+                } else {
+                    // For Preonne without cron stones, use standard calculation
+                    expectedAttempts = rawAttempts;
+                }
+                console.log(`Preonne Level ${currentLevel}: Using fixed rate of ${baseChance}%, result: ${expectedAttempts.toFixed(2)} attempts`);
+            }
+            // Normal items with variable success rates based on failstacks
+            else if (useCronForThisLevel) {
                 // Calculate exact average attempts with dynamic failstack increments
                 expectedAttempts = calculateExactAverageAttempts(baseChance, fs);
                 console.log(`Level ${currentLevel}: Using exact calculation with base rate ${baseChance} and initial FS ${fs}, result: ${expectedAttempts.toFixed(2)} attempts`);
@@ -1826,37 +1954,49 @@ document.addEventListener('DOMContentLoaded', async function() {
                 await prefetchCommonPrices();
             }
             
-            // Get all failstack inputs
-            const failstackInputs = failstackContainer.querySelectorAll('input[type="number"]');
-            
-            // Validate inputs
+            // For Preonne, we don't need failstack inputs
             let isValid = true;
-            failstackInputs.forEach(input => {
-                // Skip validation for disabled inputs (they are using softcap value)
-                if (input.disabled) {
+            let failstackValues = [];
+            
+            if (selectedItem !== 'Preonne') {
+                // Get all failstack inputs
+                const failstackInputs = failstackContainer.querySelectorAll('input[type="number"]');
+                
+                // Validate inputs
+                failstackInputs.forEach(input => {
+                    // Skip validation for disabled inputs (they are using softcap value)
+                    if (input.disabled) {
+                        return;
+                    }
+                    
+                    if (!input.value || isNaN(parseInt(input.value))) {
+                        isValid = false;
+                        input.style.borderColor = 'red';
+                    } else {
+                        input.style.borderColor = '#ddd';
+                        failstackValues.push(parseInt(input.value));
+                    }
+                });
+                
+                if (!isValid) {
+                    alert('Please enter a valid number for all failstack fields.');
+                    resultsDiv.innerHTML = '';
                     return;
                 }
+            } else {
+                // For Preonne, we'll use dummy failstack values (they won't be used)
+                const levels = enhancementLevels[selectedItem];
+                const startIndex = levels.indexOf(selectedStartLevel);
+                const targetIndex = levels.indexOf(selectedTargetLevel);
+                const enhancementCount = targetIndex - startIndex;
                 
-                if (!input.value || isNaN(parseInt(input.value))) {
-                    isValid = false;
-                    input.style.borderColor = 'red';
-                } else {
-                    input.style.borderColor = '#ddd';
-                }
-            });
-            
-            if (!isValid) {
-                alert('Please enter a valid number for all failstack fields.');
-                resultsDiv.innerHTML = '';
-                return;
+                // Fill with zeros since failstacks don't matter for Preonne
+                failstackValues = new Array(enhancementCount).fill(0);
             }
-            
-            // Collect failstack values
-            const failstacks = Array.from(failstackInputs).map(input => parseInt(input.value));
             
             try {
                 // Perform calculation (asynchronously)
-                const results = await calculateEnhancement(selectedItem, selectedStartLevel, selectedTargetLevel, failstacks);
+                const results = await calculateEnhancement(selectedItem, selectedStartLevel, selectedTargetLevel, failstackValues);
                 
                 // Display results
                 displayResults(results);
@@ -1880,6 +2020,60 @@ document.addEventListener('DOMContentLoaded', async function() {
             simTargetLevel.innerHTML = '<option value="">-- Select Level --</option>';
             simTargetLevel.disabled = true;
             simulateBtn.disabled = true;
+            
+            // For Preonne, we need to handle the failstack field specially
+            if (selectedItem === 'Preonne') {
+                // Show a message about Preonne having fixed success rates
+                if (simFailstack) {
+                    simFailstack.disabled = true;
+                    simFailstack.value = '';
+                    simFailstack.placeholder = 'Not used for Preonne';
+                }
+                
+                if (simUseRecommendedFS) {
+                    simUseRecommendedFS.disabled = true;
+                    simUseRecommendedFS.checked = false;
+                }
+                
+                // Show informational message
+                const fsContainer = document.getElementById('sim-failstack-container');
+                if (fsContainer) {
+                    const infoElement = document.getElementById('preonne-sim-info');
+                    if (!infoElement) {
+                        const infoMessage = createElement('div', {
+                            id: 'preonne-sim-info',
+                            style: {
+                                padding: '8px',
+                                margin: '8px 0',
+                                backgroundColor: '#222',
+                                color: '#ff5555',
+                                borderRadius: '4px',
+                                fontSize: '14px',
+                                fontWeight: 'bold',
+                                border: '1px solid #444'
+                            }
+                        }, 'Preonne has fixed enhancement chances regardless of failstacks.');
+                        
+                        fsContainer.appendChild(infoMessage);
+                    }
+                }
+            } else {
+                // For other items, enable failstack fields
+                if (simFailstack) {
+                    simFailstack.disabled = false;
+                    simFailstack.placeholder = 'Enter failstack value';
+                }
+                
+                if (simUseRecommendedFS) {
+                    simUseRecommendedFS.disabled = false;
+                }
+                
+                // Remove any Preonne info message if it exists
+                const infoElement = document.getElementById('preonne-sim-info');
+                if (infoElement) {
+                    infoElement.remove();
+                }
+            }
             
             if (selectedItem) {
                 // Enable and populate target level dropdown
@@ -2007,7 +2201,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     function checkSimulationInputs() {
         const itemSelected = simItemSelect.value !== '';
         const targetSelected = simTargetLevel.value !== '';
-        const failstackEntered = simFailstack.value !== '' && !isNaN(parseInt(simFailstack.value));
+        const isPreonne = simItemSelect.value === 'Preonne';
+        
+        // For Preonne, we don't need to validate the failstack field
+        const failstackEntered = isPreonne ? true : (simFailstack.value !== '' && !isNaN(parseInt(simFailstack.value)));
+        
         const attemptsEntered = simAttempts.value !== '' && 
                                !isNaN(parseInt(simAttempts.value)) && 
                                parseInt(simAttempts.value) > 0;
@@ -2097,6 +2295,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const commonItemIds = [
                 44195, // Memory Fragment
                 4998,  // Sharp Black Crystal Shard
+                4987,  // Concentrated Magical Black Gem
                 721003, // Caphras Stone
                 820979, // Essence of Dawn
                 820934  // Primordial Black Stone
@@ -2556,6 +2755,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         const selectedLevel = simTargetLevel.value;
         
         if (!selectedItem || !selectedLevel) return;
+        
+        // For Preonne, failstacks are not used so this function should do nothing
+        if (selectedItem === 'Preonne') {
+            simFailstack.disabled = true;
+            simFailstack.value = '';
+            simFailstack.placeholder = 'Not used for Preonne';
+            return;
+        }
         
         // Get the current level (one before the target)
         const levels = enhancementLevels[selectedItem];
