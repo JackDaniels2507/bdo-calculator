@@ -64,6 +64,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const useCronCheckbox = document.getElementById('use-cron');
     const useCostumeCronCheckbox = document.getElementById('use-costume-cron');
     const useMemFragsCheckbox = document.getElementById('use-mem-frags');
+    const useArtisanMemoryCheckbox = document.getElementById('use-artisan-memory');
     
     // Get simulation tab elements
     const simItemSelect = document.getElementById('sim-item-select');
@@ -76,6 +77,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const simResultsDiv = document.getElementById('sim-results');
     const simUseRecommendedFS = document.getElementById('sim-use-recommended-fs');
     const simUseMemFrags = document.getElementById('sim-use-mem-frags');
+    const simUseArtisanMemory = document.getElementById('sim-use-artisan-memory');
     
     // Get tab navigation elements
     const tabs = document.querySelectorAll('.tab');
@@ -141,6 +143,39 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Call updateFailstackInfo after a short delay to ensure all DOM elements are properly initialized
     setTimeout(updateFailstackInfo, 100);
+    
+    // Add event listeners for memory fragments and artisan memory checkboxes
+    if (useMemFragsCheckbox) {
+        useMemFragsCheckbox.addEventListener('change', function() {
+            if (useArtisanMemoryCheckbox) {
+                // Only enable Artisan's Memory checkbox if memory fragments are enabled
+                useArtisanMemoryCheckbox.disabled = !this.checked;
+                if (!this.checked) {
+                    useArtisanMemoryCheckbox.checked = false;
+                }
+            }
+        });
+        // Initial state
+        if (useArtisanMemoryCheckbox) {
+            useArtisanMemoryCheckbox.disabled = !useMemFragsCheckbox.checked;
+        }
+    }
+    
+    if (simUseMemFrags) {
+        simUseMemFrags.addEventListener('change', function() {
+            if (simUseArtisanMemory) {
+                // Only enable Artisan's Memory checkbox if memory fragments are enabled
+                simUseArtisanMemory.disabled = !this.checked;
+                if (!this.checked) {
+                    simUseArtisanMemory.checked = false;
+                }
+            }
+        });
+        // Initial state
+        if (simUseArtisanMemory) {
+            simUseArtisanMemory.disabled = !simUseMemFrags.checked;
+        }
+    }
     
     // Log which elements were found or not found for debugging
     console.log('DOM elements found:', {
@@ -603,9 +638,11 @@ document.addEventListener('DOMContentLoaded', async function() {
      * @param {string} level - The current level
      * @param {boolean} useCron - Whether to use cron stones
      * @param {boolean} useMemFrags - Whether to include memory fragment costs
+     * @param {boolean} isUsingCostumeCron - Whether to use costume cron stones (null means auto-detect)
+     * @param {boolean} useArtisanMemory - Whether to use Artisan's Memory (null means auto-detect)
      * @returns {Promise<Object>} - The total cost and details of the attempt
      */
-    async function calculateAttemptCost(item, level, useCron, useMemFrags, isUsingCostumeCron = null) {
+    async function calculateAttemptCost(item, level, useCron, useMemFrags, isUsingCostumeCron = null, useArtisanMemory = null) {
         const requirements = enhancementItemRequirements[item]?.[level];
         
         // Calculate materials cost
@@ -667,22 +704,69 @@ document.addEventListener('DOMContentLoaded', async function() {
            
             const durabilityLoss = enhancementItemRequirements[item]?.durabilityLoss || 0;
             const memFragPerDurability = enhancementItemRequirements[item]?.memFragPerDurability || 1;
-            memFragsCount = Math.ceil(durabilityLoss / memFragPerDurability);
+            
+            // Check if Artisan's Memory is being used (5x efficiency)
+            // If useArtisanMemory is explicitly provided, use that value
+            let useArtisan;
+            if (useArtisanMemory !== null) {
+                useArtisan = useArtisanMemory;
+            } else {
+                // Otherwise determine based on UI state
+                const isSimulation = document.querySelector('.tab-content:not(.hidden)').id === 'simulation-tab';
+                useArtisan = (isSimulation && simUseArtisanMemory && simUseArtisanMemory.checked) || 
+                             (!isSimulation && useArtisanMemoryCheckbox && useArtisanMemoryCheckbox.checked);
+            }
+            
+            // ALWAYS calculate the original fragment count first (without Artisan's)
+            const originalFragCount = Math.ceil(durabilityLoss / memFragPerDurability);
+            
+            // Then calculate with Artisan's if needed using integer division + remainder handling
+            if (useArtisan) {
+                // Integer division (whole part)
+                const wholePart = Math.floor(originalFragCount / 5);
+                // Remainder calculation
+                const remainder = originalFragCount % 5;
+                // Add the whole part plus the remainder (which is already handled by integer division)
+                memFragsCount = remainder > 0 ? wholePart + remainder : wholePart;
+            } else {
+                memFragsCount = originalFragCount;
+            }
             
             try {
                 const memFragPrice = await fetchItemPrice(currentRegion, 44195); // Memory Fragment ID
-                memFragsCost = memFragPrice * memFragsCount;
-                console.log(`Adding memory fragment cost: ${memFragsCount} frags at ${memFragPrice.toLocaleString()} each = ${memFragsCost.toLocaleString()}`);
+                
+                if (useArtisan) {
+                    // When using Artisan's Memory, we've already calculated the reduced fragment count
+                    memFragsCost = memFragPrice * memFragsCount;
+                    
+                    // We already calculated the original fragment count
+                    const originalCost = memFragPrice * originalFragCount;
+                    
+                    console.log(`Adding memory fragment cost with Artisan's Memory: ${memFragsCount} frags at ${memFragPrice.toLocaleString()} each = ${memFragsCost.toLocaleString()} (saved ${originalCost - memFragsCost} silver compared to ${originalFragCount} frags without Artisan's)`);
+                } else {
+                    // Regular memory fragments without Artisan's Memory
+                    memFragsCost = memFragPrice * memFragsCount;
+                    console.log(`Adding memory fragment cost: ${memFragsCount} frags at ${memFragPrice.toLocaleString()} each = ${memFragsCost.toLocaleString()}`);
+                }
             } catch (error) {
                 console.error(`Error fetching price for memory fragments:`, error);
                 const defaultPrice = marketPrices[currentRegion][44195] || 0;
                 memFragsCost = defaultPrice * memFragsCount;
+                // Note: We're already accounting for Artisan's Memory by reducing memFragsCount
+                // in the calculation above, so no special handling needed here
             }
         }
         
         // Total cost for this attempt 
         const totalCost = materialsCost + cronCost + memFragsCost;
         console.log(`Total attempt cost for ${item} ${level}: ${totalCost.toLocaleString()} (materials: ${materialsCost.toLocaleString()}, cron: ${cronCost.toLocaleString()}, memory frags: ${memFragsCost.toLocaleString()})`);
+        
+        // Get the durability loss and memory fragment per durability values
+        const durabilityLossVal = enhancementItemRequirements[item]?.durabilityLoss || 0;
+        const memFragPerDurabilityVal = enhancementItemRequirements[item]?.memFragPerDurability || 1;
+        
+        // Calculate the original fragment count regardless of Artisan's Memory
+        const originalFragCount = Math.ceil(durabilityLossVal / memFragPerDurabilityVal);
         
         // Return cost details
         return {
@@ -691,8 +775,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             cronCost,
             memFragsCost,
             memFragsCount,
-            durabilityLoss: enhancementItemRequirements[item]?.durabilityLoss || 0,
-            memFragPerDurability: enhancementItemRequirements[item]?.memFragPerDurability || 1
+            // Store the original fragment count for comparison purposes
+            originalFragCount: originalFragCount,
+            durabilityLoss: durabilityLossVal,
+            memFragPerDurability: memFragPerDurabilityVal
         };
     }
     
@@ -1068,18 +1154,21 @@ document.addEventListener('DOMContentLoaded', async function() {
         const materialsCostArray = [];
         const memFragsCostArray = [];
         const memFragsCountArray = [];
+        const originalMemFragsCountArray = []; // New array for original fragment counts
         const cronCostArray = [];
         const cronStoneCountArray = [];
         let totalAttempts = 0;
         let totalCostValue = 0;
         let totalMemFragsCost = 0;
         let totalMemFragsCount = 0;
+        let totalOriginalMemFragsCount = 0; // New total for original fragment counts
         let totalCronCost = 0;
         let totalCronCount = 0;
         
-        // Check if we're using cron stones and memory fragments
+        // Check if we're using cron stones, memory fragments, and artisan's memory
         const useCron = (useCronCheckbox && useCronCheckbox.checked) || (useCostumeCronCheckbox && useCostumeCronCheckbox.checked);
         const useMemFrags = useMemFragsCheckbox && useMemFragsCheckbox.checked;
+        const useArtisan = useArtisanMemoryCheckbox && useArtisanMemoryCheckbox.checked;
         
         // Arrays to track which levels use cron stones
         const useCronPerLevelArray = [];
@@ -1118,11 +1207,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             
             // Get the cost for this attempt (asynchronously) - use cron based on per-level decision
+            // For Artisan's Memory, use the checkbox from the calculator tab
+            const useArtisanForCalculator = useArtisanMemoryCheckbox && useArtisanMemoryCheckbox.checked;
             const costDetails = await calculateAttemptCost(
                 item, 
                 currentLevel, 
                 useCronForThisLevel,
-                useMemFrags
+                useMemFrags,
+                null, // Let it auto-detect costume cron
+                useArtisanForCalculator // Explicitly pass Artisan's Memory setting
             );
             
             // Calculate total cost for this enhancement level
@@ -1171,7 +1264,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                         const useCronForRecovery = useCron || (prevIdx === 0 && prevLevel !== 'BASE');
                         
                         // Get cost of one attempt at this level - using the same cron stone logic
-                        const levelCostDetails = await calculateAttemptCost(item, prevLevel, useCronForRecovery, useMemFrags);
+                        // Use the same Artisan's Memory setting as the main calculation
+                        const levelCostDetails = await calculateAttemptCost(
+                            item, 
+                            prevLevel, 
+                            useCronForRecovery, 
+                            useMemFrags, 
+                            null, // Auto-detect costume cron
+                            useArtisanForCalculator // Use same Artisan setting
+                        );
                         
                         // Calculate success rate for this level
                         const levelSuccessChance = calculateSuccessChance(item, prevLevel, prevFS);
@@ -1333,8 +1434,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             memFragsCostArray.push(levelMemFragsCost);
             memFragsCountArray.push(levelMemFragsCount);
+            
+            // Track the original memory fragment count (without Artisan's effect)
+            // Always use the originalFragCount from costDetails, which is calculated correctly
+            // regardless of whether Artisan's Memory is used
+            let levelOriginalMemFragsCount = costDetails.originalFragCount * expectedAttempts;
+            originalMemFragsCountArray.push(levelOriginalMemFragsCount);
+            
             totalMemFragsCost += levelMemFragsCost;
             totalMemFragsCount += levelMemFragsCount;
+            totalOriginalMemFragsCount += levelOriginalMemFragsCount;
             
             // Track cron stone usage - now using per-level decision and the cost details from calculateAttemptCost
             if (useCronForThisLevel) {
@@ -1387,13 +1496,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             memFragsCost: memFragsCostArray,
             totalMemFragsCost: Math.round(totalMemFragsCost),
             memFragsCount: memFragsCountArray,
-            totalMemFragsCount: Math.round(totalMemFragsCount),
+            totalMemFragsCount: Math.round(totalMemFragsCount), // Round for display purposes
+            originalMemFragsCount: originalMemFragsCountArray,
+            totalOriginalMemFragsCount: Math.round(totalOriginalMemFragsCount), // Round for display purposes
             cronCost: cronCostArray,
             cronStoneCount: cronStoneCountArray,
             totalCronCost: Math.round(totalCronCost),
             totalCronCount: Math.round(totalCronCount),
             includeMemFrags: useMemFrags,
             useCronStones: useCron,
+            useArtisanMemory: useArtisan,
             useCronPerLevel: useCronPerLevelArray // Track which levels used cron stones
         };
     }
@@ -1461,7 +1573,30 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             
             if (results.includeMemFrags) {
-                costBreakdown.innerHTML += `<br>• <strong>Memory Fragments:</strong> ${Math.round(results.totalMemFragsCount).toLocaleString()} fragments (${Math.round(results.totalMemFragsCost).toLocaleString()} Silver)`;
+                if (useArtisanMemoryCheckbox && useArtisanMemoryCheckbox.checked) {
+                    // Use the total original fragments count that we now track separately
+                    // Display with proper rounding
+                    const originalFragCount = results.totalOriginalMemFragsCount;
+                    const memFragPrice = marketPrices[currentRegion][44195] || 0;
+                    
+                    // Recalculate the actual fragment count with Artisan's Memory using the proper formula
+                    // Integer division (whole part)
+                    const wholePart = Math.floor(originalFragCount / 5);
+                    // Remainder calculation
+                    const remainder = originalFragCount % 5;
+                    // If there's a remainder, we need one more fragment
+                    const artisanFragCount = remainder > 0 ? wholePart + 1 : wholePart;
+                    
+                    // Calculate costs based on the recalculated fragment count
+                    const artisanCost = artisanFragCount * memFragPrice;
+                    const originalCost = originalFragCount * memFragPrice;
+                    const savings = originalCost - artisanCost;
+                    
+                    costBreakdown.innerHTML += `<br>• <strong>Memory Fragments:</strong> ${artisanFragCount.toLocaleString()} fragments with Artisan's Memory (${Math.round(artisanCost).toLocaleString()} Silver)`;
+                    costBreakdown.innerHTML += `<br><span style="margin-left: 15px; font-size: 0.9em; color: #27ae60;">✓ Saved ~${Math.round(savings).toLocaleString()} Silver by using Artisan's Memory (reduced from ${originalFragCount.toLocaleString()} fragments)</span>`;
+                } else {
+                    costBreakdown.innerHTML += `<br>• <strong>Memory Fragments:</strong> ${results.totalMemFragsCount.toLocaleString()} fragments (${Math.round(results.totalMemFragsCost).toLocaleString()} Silver)`;
+                }
             }
             
             costInfo.appendChild(costBreakdown);
@@ -1470,7 +1605,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         else if (results.includeMemFrags) {
             costBreakdown.innerHTML = 
                 `• <strong>Material Cost:</strong> ${Math.round(results.totalMaterialCost).toLocaleString()} Silver<br>` +
-                `• <strong>Memory Fragments:</strong> ${Math.round(results.totalMemFragsCount).toLocaleString()} fragments (${Math.round(results.totalMemFragsCost).toLocaleString()} Silver)`;
+                `• <strong>Memory Fragments:</strong> ${results.totalMemFragsCount.toLocaleString()} fragments (${Math.round(results.totalMemFragsCost).toLocaleString()} Silver)`;
             costInfo.appendChild(costBreakdown);
         }
         
@@ -1610,7 +1745,27 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 
             // Add memory fragment info if included
             if (results.includeMemFrags) {
-                detailContent += `<br><span style="margin-left: 15px; color: #9b59b6;">• Memory Fragments: ${Math.round(results.memFragsCount[i]).toLocaleString()} (${Math.round(results.memFragsCost[i]).toLocaleString()} Silver)</span>`;
+                if (useArtisanMemoryCheckbox && useArtisanMemoryCheckbox.checked) {
+                    // Get the original fragment count and recalculate with Artisan's Memory
+                    const originalFragCount = Math.round(results.originalMemFragsCount[i]);
+                    const memFragPrice = marketPrices[currentRegion][44195] || 0;
+                    
+                    // Recalculate the actual fragment count with Artisan's Memory
+                    // Integer division (whole part)
+                    const wholePart = Math.floor(originalFragCount / 5);
+                    // Remainder calculation
+                    const remainder = originalFragCount % 5;
+                    // If there's a remainder, we need one more fragment
+                    const artisanFragCount = remainder > 0 ? wholePart + 1 : wholePart;
+                    
+                    // Calculate cost based on the recalculated fragment count
+                    const artisanCost = artisanFragCount * memFragPrice;
+                    
+                    detailContent += `<br><span style="margin-left: 15px; color: #9b59b6;">• Memory Fragments: ${artisanFragCount.toLocaleString()} with Artisan's Memory (${Math.round(artisanCost).toLocaleString()} Silver)</span>`;
+                    detailContent += `<br><span style="margin-left: 30px; font-size: 0.85em; color: #9b59b6;">Would need ${originalFragCount.toLocaleString()} fragments without Artisan's Memory</span>`;
+                } else {
+                    detailContent += `<br><span style="margin-left: 15px; color: #9b59b6;">• Memory Fragments: ${Math.round(results.memFragsCount[i]).toLocaleString()} (${Math.round(results.memFragsCost[i]).toLocaleString()} Silver)</span>`;
+                }
             }
                                 
             // Add note about downgrades if not using cron and not enhancing from BASE level
@@ -1984,7 +2139,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (simAttempts) simAttempts.addEventListener('input', checkSimulationInputs);
     
     // Simulation function
-    async function runSimulation(item, startLevel, targetLevel, startingFS, attempts, useCron, useMemFrags, praygeOption, isUsingCostumeCron = false) {
+    async function runSimulation(item, startLevel, targetLevel, startingFS, attempts, useCron, useMemFrags, praygeOption, isUsingCostumeCron = false, useArtisan = false) {
         // Results to track
         const results = {
             item: item,
@@ -1997,17 +2152,23 @@ document.addEventListener('DOMContentLoaded', async function() {
             materialsCost: 0,
             cronCost: 0,
             memFragsCost: 0,
+            memFragsCount: 0,  // Track actual memory fragment count
             attemptLog: [],
             praygeOption: praygeOption, // Track which streamer the user prayed to
-            isUsingCostumeCron: isUsingCostumeCron // Track if using costume cron stones
+            isUsingCostumeCron: isUsingCostumeCron, // Track if using costume cron stones
+            useArtisan: useArtisan // Track if using Artisan's Memory
         };
         
         // Run the simulation for the specified number of attempts
         let currentFS = startingFS;
         
         // Get the item cost once to use for all attempts (to avoid too many API calls)
-        // Pass isUsingCostumeCron to calculateAttemptCost so it can use the correct cron stone price
-        const baseAttemptCost = await calculateAttemptCost(item, startLevel, useCron, useMemFrags, isUsingCostumeCron);
+        // Pass isUsingCostumeCron and useArtisan to calculateAttemptCost so it uses the correct settings
+        const baseAttemptCost = await calculateAttemptCost(item, startLevel, useCron, useMemFrags, isUsingCostumeCron, useArtisan);
+        
+        // Store the durability loss per attempt and mem frags per durability for later calculations
+        results.durabilityLossPerAttempt = enhancementItemRequirements[item]?.durabilityLoss || 0;
+        results.memFragPerDurability = enhancementItemRequirements[item]?.memFragPerDurability || 1;
         
         for (let i = 0; i < attempts; i++) {
             // Calculate base success chance using the utility function
@@ -2033,6 +2194,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             results.materialsCost += baseAttemptCost.materialsCost;
             results.cronCost += baseAttemptCost.cronCost;
             results.memFragsCost += baseAttemptCost.memFragsCost;
+            
+            // Track memory fragment count separately (important when using Artisan's Memory)
+            if (useMemFrags) {
+                results.memFragsCount += baseAttemptCost.memFragsCount;
+            }
             
             // Simulate the enhancement attempt (random roll)
             const roll = Math.random() * 100;
@@ -2163,12 +2329,49 @@ document.addEventListener('DOMContentLoaded', async function() {
             "Costume Cron Stones (2,185,297 silver each)" : 
             "Vendor Cron Stones (3,000,000 silver each)";
         
-        elements[4].innerHTML = `
-            <div><strong>Materials:</strong> ${results.materialsCost.toLocaleString()} Silver</div>
-            <div><strong>Cron Stones:</strong> ${results.cronCost.toLocaleString()} Silver ${results.cronCost > 0 ? `<span style="color: #888; font-style: italic; font-size: 0.9em;">(${cronTypeText})</span>` : ''}</div>
-            <div><strong>Memory Fragments:</strong> ${results.memFragsCost.toLocaleString()} Silver</div>
-            <div><em>Average Cost Per Attempt:</em> ${Math.round(results.totalCost / results.attempts).toLocaleString()} Silver</div>
-        `;
+        // Check if Artisan's Memory was used in the simulation (get it from the results)
+        const isUsingArtisan = results.useArtisan;
+        
+        if (isUsingArtisan && results.memFragsCost > 0) {
+            // Calculate what memory fragments would have cost without Artisan's Memory
+            const memFragPrice = marketPrices[currentRegion][44195] || 0;
+            // For the items in the simulation, we need to calculate total durability loss
+            // and directly calculate what it would have cost without Artisan's Memory
+            const durabilityPerAttempt = results.durabilityLossPerAttempt || enhancementItemRequirements[results.item]?.durabilityLoss || 0;
+            const memFragPerDurability = results.memFragPerDurability || enhancementItemRequirements[results.item]?.memFragPerDurability || 1;
+            // Total durability loss across all failures
+            const totalDurabilityLoss = durabilityPerAttempt * results.failures;
+            // Calculate fragments needed without Artisan's Memory (directly using the durability formula)
+            const originalFragCount = Math.ceil(totalDurabilityLoss / memFragPerDurability);
+            
+            // Recalculate the actual fragment count with Artisan's Memory
+            // Integer division (whole part)
+            const wholePart = Math.floor(originalFragCount / 5);
+            // Remainder calculation
+            const remainder = originalFragCount % 5;
+            // If there's a remainder, we need one more fragment
+            const artisanFragCount = remainder > 0 ? wholePart + 1 : wholePart;
+            
+            // Calculate costs based on the recalculated fragment count
+            const artisanCost = artisanFragCount * memFragPrice;
+            const originalCost = originalFragCount * memFragPrice;
+            const savings = originalCost - artisanCost;
+            
+            elements[4].innerHTML = `
+                <div><strong>Materials:</strong> ${results.materialsCost.toLocaleString()} Silver</div>
+                <div><strong>Cron Stones:</strong> ${results.cronCost.toLocaleString()} Silver ${results.cronCost > 0 ? `<span style="color: #888; font-style: italic; font-size: 0.9em;">(${cronTypeText})</span>` : ''}</div>
+                <div><strong>Memory Fragments:</strong> ${artisanFragCount.toLocaleString()} fragments with Artisan's Memory (${artisanCost.toLocaleString()} Silver)</div>
+                <div style="margin-left: 20px; color: #27ae60; font-size: 0.9em;">✓ Saved ~${savings.toLocaleString()} Silver (reduced from ${originalFragCount} fragments)</div>
+                <div><em>Average Cost Per Attempt:</em> ${Math.round((results.materialsCost + results.cronCost + artisanCost) / results.attempts).toLocaleString()} Silver</div>
+            `;
+        } else {
+            elements[4].innerHTML = `
+                <div><strong>Materials:</strong> ${results.materialsCost.toLocaleString()} Silver</div>
+                <div><strong>Cron Stones:</strong> ${results.cronCost.toLocaleString()} Silver ${results.cronCost > 0 ? `<span style="color: #888; font-style: italic; font-size: 0.9em;">(${cronTypeText})</span>` : ''}</div>
+                <div><strong>Memory Fragments:</strong> ${results.memFragsCost.toLocaleString()} Silver</div>
+                <div><em>Average Cost Per Attempt:</em> ${Math.round(results.totalCost / results.attempts).toLocaleString()} Silver</div>
+            `;
+        }
         
         // Add all elements to the results div
         elements.forEach(element => simResultsDiv.appendChild(element));
@@ -2296,6 +2499,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const attempts = parseInt(simAttempts.value);
             const useCron = simUseCron.checked || simUseCostumeCron.checked;
             const useMemFrags = simUseMemFrags.checked;
+            const useArtisan = simUseArtisanMemory && simUseArtisanMemory.checked;
             // Track which cron stone option is being used
             const isUsingCostumeCron = simUseCostumeCron && simUseCostumeCron.checked;
             // Removed addFSAfterFail checkbox - failstacks will automatically increment when using cron stones
@@ -2323,7 +2527,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
                 
                 // Use the isUsingCostumeCron variable we defined earlier
-                const simulationResults = await runSimulation(item, startLevel, targetLevel, startingFS, attempts, useCron, useMemFrags, praygeOption, isUsingCostumeCron);
+                const simulationResults = await runSimulation(item, startLevel, targetLevel, startingFS, attempts, useCron, useMemFrags, praygeOption, isUsingCostumeCron, useArtisan);
                 displaySimulationResults(simulationResults);
             } catch (error) {
                 console.error('Error in simulation:', error);
