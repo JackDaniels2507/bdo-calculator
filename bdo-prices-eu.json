@@ -1,37 +1,42 @@
 {
+  "4987": {
+    "name": "Concentrated Magical Black Gem",
+    "price": 17798971,
+    "timestamp": "2025-08-05T10:25:25.823Z"
+  },
   "4998": {
     "name": "Sharp Black Crystal Shard",
-    "price": 4919738,
-    "timestamp": "2025-08-05T01:15:18.748Z"
+    "price": 4926607,
+    "timestamp": "2025-08-05T10:25:23.377Z"
   },
   "44195": {
     "name": "Memory Fragment",
-    "price": 4987546,
-    "timestamp": "2025-08-05T01:15:14.148Z"
+    "price": 4983081,
+    "timestamp": "2025-08-05T10:25:18.457Z"
   },
   "721003": {
     "name": "Caphras Stone",
-    "price": 2204914,
-    "timestamp": "2025-08-05T01:15:16.332Z"
+    "price": 2157345,
+    "timestamp": "2025-08-05T10:25:20.938Z"
   },
   "752023": {
     "name": "Mass of Pure Magic",
     "price": 0,
-    "timestamp": "2025-08-05T01:15:20.917Z"
+    "timestamp": "2025-08-05T10:25:28.359Z"
   },
   "820934": {
     "name": "Primordial Black Stone",
-    "price": 39622988,
-    "timestamp": "2025-08-05T01:15:11.977Z"
+    "price": 40421666,
+    "timestamp": "2025-08-05T10:25:16.193Z"
   },
   "820979": {
     "name": "Essence of Dawn",
-    "price": 79124150,
-    "timestamp": "2025-08-05T01:15:07.497Z"
+    "price": 79779722,
+    "timestamp": "2025-08-05T10:25:11.456Z"
   },
   "820984": {
     "name": "DAWN",
     "price": 0,
-    "timestamp": "2025-08-05T01:15:09.807Z"
+    "timestamp": "2025-08-05T10:25:13.939Z"
   }
 }
