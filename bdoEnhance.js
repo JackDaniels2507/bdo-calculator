@@ -453,7 +453,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Cache control to reduce network requests
     const priceCache = {
         lastFetch: 0, // Timestamp of last fetch
-        cacheDuration: 30 * 60 * 1000, // 30 minutes in milliseconds
+        cacheDuration: 390 * 60 * 1000, // 390 minutes (6.5 hours) in milliseconds
     };
     
     // Market prices with built-in defaults
