@@ -1813,8 +1813,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                         
                         // If we're calculating memory fragment costs
                         if (useMemFrags) {
-                            const levelMemCost = levelCostDetails.memFragsCost * levelExpectedAttempts * recoveryCostMultiplier;
-                            const levelMemCount = levelCostDetails.memFragsCount * levelExpectedAttempts * recoveryCostMultiplier;
+                            const levelMemCost = levelCostDetails.memFragsCost * (levelExpectedAttempts - 1) * recoveryCostMultiplier; // -1 for successful attempt
+                            const levelMemCount = levelCostDetails.memFragsCount * (levelExpectedAttempts - 1) * recoveryCostMultiplier;
                             downgradedMemFragsCost += levelMemCost;
                             downgradedMemFragsCount += levelMemCount;
                         }
@@ -1885,10 +1885,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const cronCost = costDetails.cronCost * expectedAttempts;
                 const cronStoneCount = enhancementItemRequirements[item]?.[currentLevel]?.cronStones || 0;
                 
-                // Memory fragment costs still apply as durability is lost with each attempt
+                // Memory fragment costs still apply as durability is lost with each failed attempt
                 if (useMemFrags) {
-                    levelMemFragsCost = costDetails.memFragsCost * expectedAttempts;
-                    levelMemFragsCount = costDetails.memFragsCount * expectedAttempts;
+                    levelMemFragsCost = costDetails.memFragsCost * (expectedAttempts - 1); // -1 because successful attempt doesn't lose durability
+                    levelMemFragsCount = costDetails.memFragsCount * (expectedAttempts - 1);
                 } else {
                     levelMemFragsCost = 0;
                     levelMemFragsCount = 0;
@@ -1967,7 +1967,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Track the original memory fragment count (without Artisan's effect)
             // Always use the originalFragCount from costDetails, which is calculated correctly
             // regardless of whether Artisan's Memory is used
-            let levelOriginalMemFragsCount = costDetails.originalFragCount * expectedAttempts;
+            // Only count failed attempts since successful attempts don't lose durability
+            let levelOriginalMemFragsCount = costDetails.originalFragCount * (expectedAttempts - 1);
             originalMemFragsCountArray.push(levelOriginalMemFragsCount);
             
             totalMemFragsCost += levelMemFragsCost;
@@ -2094,8 +2095,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const wholePart = Math.floor(originalFragCount / 5);
                 // Remainder calculation
                 const remainder = originalFragCount % 5;
-                // If there's a remainder, we need one more fragment
-                const artisanFragCount = remainder > 0 ? wholePart + 1 : wholePart;
+                // Add the whole part plus the actual remainder value
+                const artisanFragCount = wholePart + remainder;
                 
                 // Calculate costs based on the recalculated fragment count
                 const artisanCost = artisanFragCount * memFragPrice;
@@ -2258,8 +2259,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const wholePart = Math.floor(originalFragCount / 5);
                     // Remainder calculation
                     const remainder = originalFragCount % 5;
-                    // If there's a remainder, we need one more fragment
-                    const artisanFragCount = remainder > 0 ? wholePart + 1 : wholePart;
+                    // Add the whole part plus the actual remainder value
+                    const artisanFragCount = wholePart + remainder;
                     
                     // Calculate cost based on the recalculated fragment count
                     const artisanCost = artisanFragCount * memFragPrice;
@@ -2770,7 +2771,17 @@ document.addEventListener('DOMContentLoaded', async function() {
         let currentUseCron = usePerLevelSettings && useCronPerLevel.length > 0 ? useCronPerLevel[0] : useCron;
         let currentCronType = usePerLevelSettings && cronTypePerLevel.length > 0 ? cronTypePerLevel[0] : isUsingCostumeCron;
         
-        const baseAttemptCost = await calculateAttemptCost(item, startLevel, currentUseCron, useMemFrags, currentCronType, useArtisan);
+        // For simulation, calculate base cost WITHOUT memory fragments (since they're only used on failure)
+        const baseAttemptCost = await calculateAttemptCost(item, startLevel, currentUseCron, false, currentCronType, useArtisan);
+        
+        // Calculate memory fragment cost separately (only used on failure)
+        let memFragCostPerFailure = 0;
+        let memFragCountPerFailure = 0;
+        if (useMemFrags) {
+            const memFragOnlyData = await calculateAttemptCost(item, startLevel, false, true, false, useArtisan);
+            memFragCostPerFailure = memFragOnlyData.memFragsCost;
+            memFragCountPerFailure = memFragOnlyData.memFragsCount;
+        }
         
         for (let i = 0; i < attempts; i++) {
             // Calculate base success chance using the utility function
@@ -2790,17 +2801,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 streamEffect = '-BiceptimusPrime';
             }
             
-            // Use the pre-calculated cost
+            // Use the pre-calculated cost (materials + cron stones, but NOT memory fragments)
             const totalAttemptCost = baseAttemptCost.totalCost;
             results.totalCost += totalAttemptCost;
             results.materialsCost += baseAttemptCost.materialsCost;
             results.cronCost += baseAttemptCost.cronCost;
-            results.memFragsCost += baseAttemptCost.memFragsCost;
-            
-            // Track memory fragment count separately (important when using Artisan's Memory)
-            if (useMemFrags) {
-                results.memFragsCount += baseAttemptCost.memFragsCount;
-            }
+            // Note: Memory fragment costs are only added on failure (below)
             
             // Simulate the enhancement attempt (random roll)
             const roll = Math.random() * 100;
@@ -2816,7 +2822,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     originalChance: originalChance.toFixed(3),
                     streamEffect: streamEffect,
                     result: 'SUCCESS',
-                    cost: totalAttemptCost
+                    cost: totalAttemptCost // No memory fragments for successful attempts
                 });
                 
                 // Reset failstack after successful attempt to simulate starting a new enhancement
@@ -2832,6 +2838,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             } else {
                 results.failures++;
+                
+                // Memory fragments are only consumed on failure (when durability is lost)
+                results.memFragsCost += memFragCostPerFailure;
+                results.memFragsCount += memFragCountPerFailure;
+                
+                // Total cost for this failed attempt includes memory fragments
+                const failedAttemptCost = totalAttemptCost + memFragCostPerFailure;
+                results.totalCost += memFragCostPerFailure; // Add memory fragment cost to total
+                
                 results.attemptLog.push({
                     attempt: i + 1,
                     failstack: currentFS,
@@ -2839,7 +2854,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     originalChance: originalChance.toFixed(3),
                     streamEffect: streamEffect,
                     result: 'FAIL',
-                    cost: totalAttemptCost
+                    cost: failedAttemptCost // Includes memory fragments for failed attempts
                 });
                 
                 // Increase failstack automatically when cron stones are used
@@ -2965,8 +2980,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             const wholePart = Math.floor(originalFragCount / 5);
             // Remainder calculation
             const remainder = originalFragCount % 5;
-            // If there's a remainder, we need one more fragment
-            const artisanFragCount = remainder > 0 ? wholePart + 1 : wholePart;
+            // Add the whole part plus the actual remainder value
+            const artisanFragCount = wholePart + remainder;
             
             // Calculate costs based on the recalculated fragment count
             const artisanCost = artisanFragCount * memFragPrice;
