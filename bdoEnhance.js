@@ -601,45 +601,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     // ============================================
     
     /**
-     * Creates a DOM element with attributes and children
-     * @param {string} tag - The HTML tag name
-     * @param {Object} attributes - Key-value pairs of attributes
-     * @param {Array|string} [children] - Child elements or text content
-     * @returns {HTMLElement} - The created element
-     */
-    function createElement(tag, attributes = {}, children = []) {
-        const element = document.createElement(tag);
-        
-        // Set attributes
-        for (const [key, value] of Object.entries(attributes)) {
-            if (key === 'className') {
-                element.className = value;
-            } else if (key === 'style' && typeof value === 'object') {
-                for (const [styleKey, styleValue] of Object.entries(value)) {
-                    element.style[styleKey] = styleValue;
-                }
-            } else {
-                element.setAttribute(key, value);
-            }
-        }
-        
-        // Add children
-        if (typeof children === 'string') {
-            element.textContent = children;
-        } else if (Array.isArray(children)) {
-            children.forEach(child => {
-                if (child instanceof Node) {
-                    element.appendChild(child);
-                } else if (typeof child === 'string') {
-                    element.appendChild(document.createTextNode(child));
-                }
-            });
-        }
-        
-        return element;
-    }
-    
-    /**
      * Calculates success chance based on failstack using BDO formulas
      * @param {string} item - The item being enhanced
      * @param {string} level - The current level
@@ -978,13 +939,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Region switching functionality
     function switchToEURegion() {
         console.log('Switching to EU region');
-        // Update calculator tab buttons
-        if (regionEU) regionEU.classList.add('active');
-        if (regionNA) regionNA.classList.remove('active');
         
-        // Update simulation tab buttons
-        if (simRegionEU) simRegionEU.classList.add('active');
-        if (simRegionNA) simRegionNA.classList.remove('active');
+        // Update region button states
+        setActiveRegion('EU', { regionEU, regionNA, simRegionEU, simRegionNA });
         
         // Set the current region for API calls
         currentRegion = 'EU';
@@ -996,21 +953,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         // Clear any calculation results when region changes
-        if (resultsDiv) resultsDiv.innerHTML = '';
-        if (simResultsDiv) simResultsDiv.innerHTML = '';
+        clearResults([resultsDiv, simResultsDiv]);
         
         console.log('Market API region set to EU');
     }
     
     function switchToNARegion() {
         console.log('Switching to NA region');
-        // Update calculator tab buttons
-        if (regionEU) regionEU.classList.remove('active');
-        if (regionNA) regionNA.classList.add('active');
         
-        // Update simulation tab buttons
-        if (simRegionEU) simRegionEU.classList.remove('active');
-        if (simRegionNA) simRegionNA.classList.add('active');
+        // Update region button states
+        setActiveRegion('NA', { regionEU, regionNA, simRegionEU, simRegionNA });
         
         // Set the current region for API calls
         currentRegion = 'NA';
@@ -1022,17 +974,22 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         // Clear any calculation results when region changes
-        if (resultsDiv) resultsDiv.innerHTML = '';
-        if (simResultsDiv) simResultsDiv.innerHTML = '';
+        clearResults([resultsDiv, simResultsDiv]);
         
         console.log('Market API region set to NA');
     }
     
     // Add event listeners to all region buttons
-    if (regionEU) regionEU.addEventListener('click', switchToEURegion);
-    if (regionNA) regionNA.addEventListener('click', switchToNARegion);
-    if (simRegionEU) simRegionEU.addEventListener('click', switchToEURegion);
-    if (simRegionNA) simRegionNA.addEventListener('click', switchToNARegion);
+    const regionButtons = [
+        { element: regionEU, handler: switchToEURegion },
+        { element: regionNA, handler: switchToNARegion },
+        { element: simRegionEU, handler: switchToEURegion },
+        { element: simRegionNA, handler: switchToNARegion }
+    ];
+    
+    regionButtons.forEach(({ element, handler }) => {
+        if (element) element.addEventListener('click', handler);
+    });
     
     // ============================================
     // Calculator Functionality
@@ -1056,10 +1013,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const levels = enhancementLevels[selectedItem];
                 
                 levels.forEach(level => {
-                    const option = document.createElement('option');
-                    option.value = level;
-                    option.textContent = level;
-                    startLevelSelect.appendChild(option);
+                    startLevelSelect.appendChild(createOption(level, level));
                 });
             } else {
                 startLevelSelect.disabled = true;
@@ -1088,10 +1042,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 
                 // Only show levels higher than the start level
                 for (let i = startIndex + 1; i < levels.length; i++) {
-                    const option = document.createElement('option');
-                    option.value = levels[i];
-                    option.textContent = levels[i];
-                    targetLevelSelect.appendChild(option);
+                    targetLevelSelect.appendChild(createOption(levels[i], levels[i]));
                 }
             } else {
                 targetLevelSelect.disabled = true;
@@ -1158,123 +1109,19 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }, 'Cron Stone Options for Preonne');
                     
                     // Create buttons for selecting all cron types
-                    const cronSelectorContainer = createElement('div', {
-                        className: 'cron-selector-container',
-                        style: 'display: flex; gap: 10px; margin-bottom: 15px;'
+                    const cronSelectorContainer = createCronSelectorButtons('cron-selector-container', {
+                        vendorHandler: function() {
+                            bulkSetCronCheckboxes('.use-cron-level', 'vendor', true);
+                        },
+                        costumeHandler: function() {
+                            bulkSetCronCheckboxes('.use-cron-level', 'costume', true);
+                        },
+                        clearHandler: function() {
+                            bulkSetCronCheckboxes('.use-cron-level', '', false);
+                        }
                     });
-                    
-                    const vendorCronBtn = createElement('button', {
-                        type: 'button',
-                        className: 'cron-selector-btn',
-                        style: 'flex: 1; padding: 8px; font-size: 12px; background-color: #3498db;'
-                    }, 'Select All Vendor Crons');
-                    
-                    const costumeCronBtn = createElement('button', {
-                        type: 'button',
-                        className: 'cron-selector-btn',
-                        style: 'flex: 1; padding: 8px; font-size: 12px; background-color: #9b59b6;'
-                    }, 'Select All Costume Crons');
-                    
-                    const clearCronsBtn = createElement('button', {
-                        type: 'button',
-                        className: 'cron-selector-btn',
-                        style: 'flex: 1; padding: 8px; font-size: 12px; background-color: #e74c3c;'
-                    }, 'Clear All Crons');
-                    
-                    // Add event listeners for the buttons
-                    vendorCronBtn.addEventListener('click', function() {
-                        // Select all Preonne cron checkboxes as vendor crons (except disabled ones)
-                        const preonneCronCheckboxes = preonneCronContainer.querySelectorAll('.use-cron-level');
-                        preonneCronCheckboxes.forEach(checkbox => {
-                            if (!checkbox.disabled) {
-                                checkbox.checked = true;
-                                checkbox.dataset.manuallyChanged = 'true';
-                            }
-                            checkbox.dataset.cronType = 'vendor';
-                            
-                            // Also update the vendor radio button
-                            const id = checkbox.id;
-                            const index = id.replace('use-cron-level-', '');
-                            const vendorRadio = document.getElementById(`vendor-cron-${index}`);
-                            const costumeRadio = document.getElementById(`costume-cron-${index}`);
-                            
-                            // Get the radio containers
-                            const vendorContainer = vendorRadio ? vendorRadio.closest('.cron-type-radio') : null;
-                            const costumeContainer = costumeRadio ? costumeRadio.closest('.cron-type-radio') : null;
-                            
-                            // Enable radio containers and set the correct one as selected
-                            if (vendorContainer) vendorContainer.classList.add('enabled');
-                            if (costumeContainer) costumeContainer.classList.add('enabled');
-                            
-                            if (vendorRadio) vendorRadio.checked = true;
-                            if (costumeRadio) costumeRadio.checked = false;
-                        });
-                    });
-                    
-                    costumeCronBtn.addEventListener('click', function() {
-                        // Select all Preonne cron checkboxes as costume crons (except disabled ones)
-                        const preonneCronCheckboxes = preonneCronContainer.querySelectorAll('.use-cron-level');
-                        preonneCronCheckboxes.forEach(checkbox => {
-                            if (!checkbox.disabled) {
-                                checkbox.checked = true;
-                                checkbox.dataset.manuallyChanged = 'true';
-                            }
-                            checkbox.dataset.cronType = 'costume';
-                            
-                            // Also update the costume radio button
-                            const id = checkbox.id;
-                            const index = id.replace('use-cron-level-', '');
-                            const vendorRadio = document.getElementById(`vendor-cron-${index}`);
-                            const costumeRadio = document.getElementById(`costume-cron-${index}`);
-                            
-                            // Get the radio containers
-                            const vendorContainer = vendorRadio ? vendorRadio.closest('.cron-type-radio') : null;
-                            const costumeContainer = costumeRadio ? costumeRadio.closest('.cron-type-radio') : null;
-                            
-                            // Enable radio containers and set the correct one as selected
-                            if (vendorContainer) vendorContainer.classList.add('enabled');
-                            if (costumeContainer) costumeContainer.classList.add('enabled');
-                            
-                            if (vendorRadio) vendorRadio.checked = false;
-                            if (costumeRadio) costumeRadio.checked = true;
-                        });
-                    });
-                    
-                    clearCronsBtn.addEventListener('click', function() {
-                        // Uncheck all Preonne cron checkboxes (except disabled ones)
-                        const preonneCronCheckboxes = preonneCronContainer.querySelectorAll('.use-cron-level');
-                        preonneCronCheckboxes.forEach(checkbox => {
-                            if (!checkbox.disabled) {
-                                checkbox.checked = false;
-                                checkbox.dataset.manuallyChanged = 'true';
-                            }
-                            delete checkbox.dataset.cronType;
-                            
-                            // Also disable the radio buttons
-                            const id = checkbox.id;
-                            const index = id.replace('use-cron-level-', '');
-                            const vendorRadio = document.getElementById(`vendor-cron-${index}`);
-                            const costumeRadio = document.getElementById(`costume-cron-${index}`);
-                            
-                            // Get the radio containers
-                            const vendorContainer = vendorRadio ? vendorRadio.closest('.cron-type-radio') : null;
-                            const costumeContainer = costumeRadio ? costumeRadio.closest('.cron-type-radio') : null;
-                            
-                            // Only disable radio containers for non-disabled checkboxes
-                            if (!checkbox.disabled) {
-                                if (vendorContainer) vendorContainer.classList.remove('enabled');
-                                if (costumeContainer) costumeContainer.classList.remove('enabled');
-                                
-                                if (vendorRadio) vendorRadio.checked = false;
-                                if (costumeRadio) costumeRadio.checked = false;
-                            }
-                        });
-                    });
-                    
-                    // Add buttons to the selector container
-                    cronSelectorContainer.appendChild(vendorCronBtn);
-                    cronSelectorContainer.appendChild(costumeCronBtn);
-                    cronSelectorContainer.appendChild(clearCronsBtn);
+                    cronSelectorContainer.style.gap = '10px';
+                    cronSelectorContainer.style.marginBottom = '15px';
                     
                     // Add the selector container after the title
                     preonneCronContainer.appendChild(cronSelectorContainer);
@@ -1446,28 +1293,25 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 // Add event listener to checkbox (only for non-disabled checkboxes)
                                 if (!cronCheckbox.disabled) {
                                     cronCheckbox.addEventListener('change', function() {
+                                        const index = this.id.replace('use-cron-level-', '');
+                                        const vendorRadio = document.getElementById(`vendor-cron-${index}`);
+                                        const costumeRadio = document.getElementById(`costume-cron-${index}`);
+                                        
                                         if (!this.checked) {
-                                            // If unchecked, disable radio button containers
-                                            vendorRadioContainer.classList.remove('enabled');
-                                            costumeRadioContainer.classList.remove('enabled');
-                                            // Uncheck both radio buttons
-                                            vendorRadio.checked = false;
-                                            costumeRadio.checked = false;
+                                            // Use unified system to disable radios
+                                            setRadioButtonState(vendorRadio, costumeRadio, false);
                                             // Remove cron type data
                                             this.dataset.cronType = '';
                                             // Reset background color
                                             levelContainer.style.backgroundColor = 'rgba(155, 89, 182, 0.1)';
                                         } else {
-                                            // If checked, enable radios and ensure one is selected
-                                            vendorRadioContainer.classList.add('enabled');
-                                            costumeRadioContainer.classList.add('enabled');
-                                            // Set vendor as default if none is selected
-                                            if (!vendorRadio.checked && !costumeRadio.checked) {
-                                                vendorRadio.checked = true;
-                                                this.dataset.cronType = 'vendor';
-                                                // Set vendor background color
-                                                levelContainer.style.backgroundColor = 'rgba(52, 152, 219, 0.2)';
-                                            }
+                                            // Use unified system to enable radios with vendor default
+                                            const currentSelection = vendorRadio.checked ? 'vendor' : (costumeRadio.checked ? 'costume' : 'vendor');
+                                            setRadioButtonState(vendorRadio, costumeRadio, true, currentSelection);
+                                            this.dataset.cronType = currentSelection;
+                                            // Set background color based on selection
+                                            const color = currentSelection === 'vendor' ? 'rgba(52, 152, 219, 0.2)' : 'rgba(155, 89, 182, 0.2)';
+                                            levelContainer.style.backgroundColor = color;
                                         }
                                     });
                                 }
@@ -1475,10 +1319,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                             
                             // Auto-select vendor radio for first level if not BASE
                             if (i === 0 && !isBaseLevel && cronCheckbox && cronCheckbox.checked) {
-                                vendorRadio.checked = true;
-                                costumeRadio.checked = false;
-                                vendorRadioContainer.classList.add('enabled');
-                                costumeRadioContainer.classList.add('enabled');
+                                setRadioButtonState(vendorRadio, costumeRadio, true, 'vendor');
                             }
                             
                             // Add radio buttons to their containers
@@ -1532,142 +1373,19 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }, [globalSoftcapCheckbox, globalSoftcapLabel]);
                 
                 // Create a container for cron selector buttons
-                const cronSelectorContainer = createElement('div', {
-                    className: 'cron-selector-container',
-                    style: 'display: flex; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 5px;'
+                const cronSelectorContainer = createCronSelectorButtons('cron-selector-container', {
+                    vendorHandler: function() {
+                        bulkSetCronCheckboxes('.use-cron-level', 'vendor', true);
+                    },
+                    costumeHandler: function() {
+                        bulkSetCronCheckboxes('.use-cron-level', 'costume', true);
+                    },
+                    clearHandler: function() {
+                        bulkSetCronCheckboxes('.use-cron-level', '', false);
+                    }
                 });
-                
-                // Create buttons for selecting all cron types
-                const vendorCronBtn = createElement('button', {
-                    type: 'button',
-                    className: 'btn btn-sm btn-primary',
-                    style: 'background-color: #3498db; border: none; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.9em;'
-                }, 'Select All Vendor Crons');
-                
-                const costumeCronBtn = createElement('button', {
-                    type: 'button',
-                    className: 'btn btn-sm btn-secondary',
-                    style: 'background-color: #9b59b6; border: none; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.9em;'
-                }, 'Select All Costume Crons');
-                
-                const clearCronsBtn = createElement('button', {
-                    type: 'button',
-                    className: 'btn btn-sm btn-danger',
-                    style: 'background-color: #e74c3c; border: none; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.9em;'
-                }, 'Clear All Crons');
-                
-                // Add event listeners to the buttons
-                vendorCronBtn.addEventListener('click', function() {
-                    // Select all per-level cron checkboxes as vendor crons (except disabled ones)
-                    const perLevelCronCheckboxes = document.querySelectorAll('.use-cron-level');
-                    perLevelCronCheckboxes.forEach(checkbox => {
-                        if (!checkbox.disabled) {
-                            checkbox.checked = true;
-                            checkbox.dataset.manuallyChanged = 'true';
-                        }
-                        checkbox.dataset.cronType = 'vendor';
-                        
-                        // Also update the vendor radio button
-                        const id = checkbox.id;
-                        const index = id.replace('use-cron-level-', '');
-                        const vendorRadio = document.getElementById(`vendor-cron-${index}`);
-                        const costumeRadio = document.getElementById(`costume-cron-${index}`);
-                        
-                        // Get the radio containers
-                        const vendorContainer = vendorRadio ? vendorRadio.closest('.cron-type-radio') : null;
-                        const costumeContainer = costumeRadio ? costumeRadio.closest('.cron-type-radio') : null;
-                        
-                        // Enable radio containers and set the correct one as selected
-                        if (vendorContainer) vendorContainer.classList.add('enabled');
-                        if (costumeContainer) costumeContainer.classList.add('enabled');
-                        
-                        if (vendorRadio) vendorRadio.checked = true;
-                        if (costumeRadio) costumeRadio.checked = false;
-                        
-                        // Update styles if needed
-                        const container = checkbox.closest('.cron-level-container');
-                        if (container) {
-                            container.style.backgroundColor = 'rgba(52, 152, 219, 0.2)';
-                        }
-                    });
-                });
-                
-                costumeCronBtn.addEventListener('click', function() {
-                    // Select all per-level cron checkboxes as costume crons (except disabled ones)
-                    const perLevelCronCheckboxes = document.querySelectorAll('.use-cron-level');
-                    perLevelCronCheckboxes.forEach(checkbox => {
-                        if (!checkbox.disabled) {
-                            checkbox.checked = true;
-                            checkbox.dataset.manuallyChanged = 'true';
-                        }
-                        checkbox.dataset.cronType = 'costume';
-                        
-                        // Also update the costume radio button
-                        const id = checkbox.id;
-                        const index = id.replace('use-cron-level-', '');
-                        const vendorRadio = document.getElementById(`vendor-cron-${index}`);
-                        const costumeRadio = document.getElementById(`costume-cron-${index}`);
-                        
-                        // Get the radio containers
-                        const vendorContainer = vendorRadio ? vendorRadio.closest('.cron-type-radio') : null;
-                        const costumeContainer = costumeRadio ? costumeRadio.closest('.cron-type-radio') : null;
-                        
-                        // Enable radio containers and set the correct one as selected
-                        if (vendorContainer) vendorContainer.classList.add('enabled');
-                        if (costumeContainer) costumeContainer.classList.add('enabled');
-                        
-                        if (vendorRadio) vendorRadio.checked = false;
-                        if (costumeRadio) costumeRadio.checked = true;
-                        
-                        // Update styles if needed
-                        const container = checkbox.closest('.cron-level-container');
-                        if (container) {
-                            container.style.backgroundColor = 'rgba(155, 89, 182, 0.2)';
-                        }
-                    });
-                });
-                
-                clearCronsBtn.addEventListener('click', function() {
-                    // Uncheck all per-level cron checkboxes (except disabled ones)
-                    const perLevelCronCheckboxes = document.querySelectorAll('.use-cron-level');
-                    perLevelCronCheckboxes.forEach(checkbox => {
-                        if (!checkbox.disabled) {
-                            checkbox.checked = false;
-                            checkbox.dataset.manuallyChanged = 'true';
-                        }
-                        delete checkbox.dataset.cronType;
-                        
-                        // Disable the radio containers
-                        const id = checkbox.id;
-                        const index = id.replace('use-cron-level-', '');
-                        const vendorRadio = document.getElementById(`vendor-cron-${index}`);
-                        const costumeRadio = document.getElementById(`costume-cron-${index}`);
-                        
-                        // Get the radio containers
-                        const vendorContainer = vendorRadio ? vendorRadio.closest('.cron-type-radio') : null;
-                        const costumeContainer = costumeRadio ? costumeRadio.closest('.cron-type-radio') : null;
-                        
-                        // Only disable radio containers for non-disabled checkboxes
-                        if (!checkbox.disabled) {
-                            if (vendorContainer) vendorContainer.classList.remove('enabled');
-                            if (costumeContainer) costumeContainer.classList.remove('enabled');
-                            
-                            if (vendorRadio) vendorRadio.checked = false;
-                            if (costumeRadio) costumeRadio.checked = false;
-                        }
-                        
-                        // Reset styles if needed
-                        const container = checkbox.closest('.cron-level-container');
-                        if (container) {
-                            container.style.backgroundColor = 'rgba(155, 89, 182, 0.1)';
-                        }
-                    });
-                });
-                
-                // Add buttons to the container
-                cronSelectorContainer.appendChild(vendorCronBtn);
-                cronSelectorContainer.appendChild(costumeCronBtn);
-                cronSelectorContainer.appendChild(clearCronsBtn);
+                cronSelectorContainer.style.justifyContent = 'space-between';
+                cronSelectorContainer.style.flexWrap = 'wrap';
                 
                 // Store input references and recommended FS values for each field
                 const inputFields = [];
@@ -1787,11 +1505,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                         
                         // Initialize radio buttons - auto-select vendor for first level if not BASE
                         if (isFirstLevel && !isBaseLevel) {
-                            vendorRadio.checked = true;
-                            costumeRadio.checked = false;
+                            // Use unified system to enable with vendor selection
+                            setRadioButtonState(vendorRadio, costumeRadio, true, 'vendor');
                         } else {
-                            vendorRadio.checked = false;
-                            costumeRadio.checked = false;
+                            // Use unified system to enable with no selection
+                            setRadioButtonState(vendorRadio, costumeRadio, true, null);
                         }
                         
                         // Create vendor and costume radio button containers with proper CSS classes
@@ -1828,27 +1546,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                         if (!cronCheckbox.disabled) {
                             cronCheckbox.addEventListener('change', function() {
                                 if (!this.checked) {
-                                    // If unchecked, disable radio button containers
-                                    vendorRadioContainer.classList.remove('enabled');
-                                    costumeRadioContainer.classList.remove('enabled');
-                                    // Uncheck both radio buttons
-                                    vendorRadio.checked = false;
-                                    costumeRadio.checked = false;
+                                    // Use unified system to disable radios
+                                    setRadioButtonState(vendorRadio, costumeRadio, false);
                                     // Remove cron type data
                                     this.dataset.cronType = '';
                                     // Reset background color
                                     cronLevelContainer.style.backgroundColor = 'rgba(155, 89, 182, 0.1)';
                                 } else {
-                                    // If checked, enable radios and ensure one is selected
-                                    vendorRadioContainer.classList.add('enabled');
-                                    costumeRadioContainer.classList.add('enabled');
-                                    // Set vendor as default if none is selected
-                                    if (!vendorRadio.checked && !costumeRadio.checked) {
-                                        vendorRadio.checked = true;
-                                        this.dataset.cronType = 'vendor';
-                                        // Set vendor background color
-                                        cronLevelContainer.style.backgroundColor = 'rgba(52, 152, 219, 0.2)';
-                                    }
+                                    // Use unified system to enable radios with vendor default
+                                    const currentSelection = vendorRadio.checked ? 'vendor' : (costumeRadio.checked ? 'costume' : 'vendor');
+                                    setRadioButtonState(vendorRadio, costumeRadio, true, currentSelection);
+                                    this.dataset.cronType = currentSelection;
+                                    // Set background color based on selection
+                                    const color = currentSelection === 'vendor' ? 'rgba(52, 152, 219, 0.2)' : 'rgba(155, 89, 182, 0.2)';
+                                    cronLevelContainer.style.backgroundColor = color;
                                 }
                             });
                         }
@@ -2749,10 +2460,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 
                 // Skip BASE level as it can't be a target
                 for (let i = 1; i < levels.length; i++) {
-                    const option = document.createElement('option');
-                    option.value = levels[i];
-                    option.textContent = levels[i];
-                    simTargetLevel.appendChild(option);
+                    simTargetLevel.appendChild(createOption(levels[i], levels[i]));
                 }
             }
         });
