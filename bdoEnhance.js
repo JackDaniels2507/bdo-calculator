@@ -62,8 +62,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     const failstackContainer = document.getElementById('failstack-container');
     const calculateBtn = document.getElementById('calculate-btn');
     const resultsDiv = document.getElementById('results');
-    const useCronCheckbox = document.getElementById('use-cron');
-    const useCostumeCronCheckbox = document.getElementById('use-costume-cron');
+    // Global cron checkboxes removed from calculator tab
+    const useCronCheckbox = null;
+    const useCostumeCronCheckbox = null;
     const useMemFragsCheckbox = document.getElementById('use-mem-frags');
     const useArtisanMemoryCheckbox = document.getElementById('use-artisan-memory');
     
@@ -90,22 +91,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     const simRegionEU = document.getElementById('sim-region-eu');
     const simRegionNA = document.getElementById('sim-region-na');
     
-    // Add event listeners to make cron checkboxes mutually exclusive
-    if (useCronCheckbox) {
-        useCronCheckbox.addEventListener('change', function() {
-            if (this.checked && useCostumeCronCheckbox) {
-                useCostumeCronCheckbox.checked = false;
-            }
-        });
-    }
-    
-    if (useCostumeCronCheckbox) {
-        useCostumeCronCheckbox.addEventListener('change', function() {
-            if (this.checked && useCronCheckbox) {
-                useCronCheckbox.checked = false;
-            }
-        });
-    }
+    // Global cron checkboxes event listeners removed since they no longer exist in calculator tab
+    // We now only use per-level cron settings for the calculator
     
     // Same for simulation tab
     // Helper function to update the Failstack info message
@@ -211,13 +198,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Set default region
     let currentRegion = 'EU';
     
-    // Initialize Cron Stone checkbox based on default region (easter egg)
-    if (currentRegion === 'EU' && useCronCheckbox && useCostumeCronCheckbox) {
-        useCronCheckbox.checked = true;
-        useCostumeCronCheckbox.checked = false;
-    } else if (currentRegion === 'NA' && useCronCheckbox && useCostumeCronCheckbox) {
-        useCronCheckbox.checked = false;
-        useCostumeCronCheckbox.checked = true;
+    // Initialize Simulation Cron Stone checkboxes based on default region (easter egg)
+    // No longer setting calculator cron checkboxes as they've been removed
+    if (currentRegion === 'EU' && simUseCron && simUseCostumeCron) {
+        simUseCron.checked = true;
+        simUseCostumeCron.checked = false;
+    } else if (currentRegion === 'NA' && simUseCron && simUseCostumeCron) {
+        simUseCron.checked = false;
+        simUseCostumeCron.checked = true;
     }
     
     console.log('BDO Enhancement Calculator initialized');
@@ -770,19 +758,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             const cronCount = requirements.cronStones || 0;
             let cronPrice;
             
-            // If isUsingCostumeCron is explicitly provided (from runSimulation), use that value
+            // If isUsingCostumeCron is explicitly provided, use that value
             if (isUsingCostumeCron !== null) {
-                cronPrice = isUsingCostumeCron ? 2185297 : 3000000; // Use specified cron stone type
+                // Use the specified cron stone type (from per-level setting or simulation)
+                cronPrice = isUsingCostumeCron ? 2185297 : 3000000;
             } else {
-                // Otherwise determine based on UI state
-                // Check which mode is active (main calculator or simulation)
+                // Fallback to simulation settings if we're in simulation mode
                 const isSimulation = document.querySelector('.tab-content:not(.hidden)').id === 'simulation-tab';
-                
-                if ((isSimulation && simUseCostumeCron && simUseCostumeCron.checked) || 
-                    (!isSimulation && useCostumeCronCheckbox && useCostumeCronCheckbox.checked)) {
-                    cronPrice = 2185297; // Costume Cron Stone price
+                if (isSimulation && simUseCostumeCron && simUseCostumeCron.checked) {
+                    cronPrice = 2185297; // Costume cron price
                 } else {
-                    cronPrice = 3000000; // Vendor Cron Stone price
+                    cronPrice = 3000000; // Default to vendor cron price
                 }
             }
             
@@ -1003,13 +989,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Set the current region for API calls
         currentRegion = 'EU';
         
-        // Easter egg: Auto-select Vendor Cron Stone for EU
-        if (useCronCheckbox && useCostumeCronCheckbox) {
-            useCronCheckbox.checked = true;
-            useCostumeCronCheckbox.checked = false;
-        }
-        
-        // Same for simulation tab
+        // Easter egg: Auto-select Vendor Cron Stone for EU (simulation tab only)
         if (simUseCron && simUseCostumeCron) {
             simUseCron.checked = true;
             simUseCostumeCron.checked = false;
@@ -1035,13 +1015,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Set the current region for API calls
         currentRegion = 'NA';
         
-        // Easter egg: Auto-select Costume Cron Stone for NA
-        if (useCronCheckbox && useCostumeCronCheckbox) {
-            useCronCheckbox.checked = false;
-            useCostumeCronCheckbox.checked = true;
-        }
-        
-        // Same for simulation tab
+        // Easter egg: Auto-select Costume Cron Stone for NA (simulation tab only)
         if (simUseCron && simUseCostumeCron) {
             simUseCron.checked = false;
             simUseCostumeCron.checked = true;
@@ -1161,6 +1135,377 @@ document.addEventListener('DOMContentLoaded', async function() {
                     
                     failstackContainer.appendChild(infoMessage);
                     
+                    // Create a container for Preonne cron stone options
+                    const preonneCronContainer = createElement('div', {
+                        className: 'preonne-cron-container',
+                        style: {
+                            padding: '15px',
+                            marginTop: '15px',
+                            backgroundColor: '#252525',
+                            borderRadius: '5px',
+                            border: '1px solid #444'
+                        }
+                    });
+                    
+                    // Title for cron stone options
+                    const cronTitle = createElement('div', {
+                        style: {
+                            marginBottom: '10px',
+                            fontWeight: 'bold',
+                            fontSize: '16px',
+                            color: '#e0e0e0'
+                        }
+                    }, 'Cron Stone Options for Preonne');
+                    
+                    // Create buttons for selecting all cron types
+                    const cronSelectorContainer = createElement('div', {
+                        className: 'cron-selector-container',
+                        style: 'display: flex; gap: 10px; margin-bottom: 15px;'
+                    });
+                    
+                    const vendorCronBtn = createElement('button', {
+                        type: 'button',
+                        className: 'cron-selector-btn',
+                        style: 'flex: 1; padding: 8px; font-size: 12px; background-color: #3498db;'
+                    }, 'Select All Vendor Crons');
+                    
+                    const costumeCronBtn = createElement('button', {
+                        type: 'button',
+                        className: 'cron-selector-btn',
+                        style: 'flex: 1; padding: 8px; font-size: 12px; background-color: #9b59b6;'
+                    }, 'Select All Costume Crons');
+                    
+                    const clearCronsBtn = createElement('button', {
+                        type: 'button',
+                        className: 'cron-selector-btn',
+                        style: 'flex: 1; padding: 8px; font-size: 12px; background-color: #e74c3c;'
+                    }, 'Clear All Crons');
+                    
+                    // Add event listeners for the buttons
+                    vendorCronBtn.addEventListener('click', function() {
+                        // Select all Preonne cron checkboxes as vendor crons (except disabled ones)
+                        const preonneCronCheckboxes = preonneCronContainer.querySelectorAll('.use-cron-level');
+                        preonneCronCheckboxes.forEach(checkbox => {
+                            if (!checkbox.disabled) {
+                                checkbox.checked = true;
+                                checkbox.dataset.manuallyChanged = 'true';
+                            }
+                            checkbox.dataset.cronType = 'vendor';
+                            
+                            // Also update the vendor radio button
+                            const id = checkbox.id;
+                            const index = id.replace('use-cron-level-', '');
+                            const vendorRadio = document.getElementById(`vendor-cron-${index}`);
+                            const costumeRadio = document.getElementById(`costume-cron-${index}`);
+                            
+                            // Get the radio containers
+                            const vendorContainer = vendorRadio ? vendorRadio.closest('.cron-type-radio') : null;
+                            const costumeContainer = costumeRadio ? costumeRadio.closest('.cron-type-radio') : null;
+                            
+                            // Enable radio containers and set the correct one as selected
+                            if (vendorContainer) vendorContainer.classList.add('enabled');
+                            if (costumeContainer) costumeContainer.classList.add('enabled');
+                            
+                            if (vendorRadio) vendorRadio.checked = true;
+                            if (costumeRadio) costumeRadio.checked = false;
+                        });
+                    });
+                    
+                    costumeCronBtn.addEventListener('click', function() {
+                        // Select all Preonne cron checkboxes as costume crons (except disabled ones)
+                        const preonneCronCheckboxes = preonneCronContainer.querySelectorAll('.use-cron-level');
+                        preonneCronCheckboxes.forEach(checkbox => {
+                            if (!checkbox.disabled) {
+                                checkbox.checked = true;
+                                checkbox.dataset.manuallyChanged = 'true';
+                            }
+                            checkbox.dataset.cronType = 'costume';
+                            
+                            // Also update the costume radio button
+                            const id = checkbox.id;
+                            const index = id.replace('use-cron-level-', '');
+                            const vendorRadio = document.getElementById(`vendor-cron-${index}`);
+                            const costumeRadio = document.getElementById(`costume-cron-${index}`);
+                            
+                            // Get the radio containers
+                            const vendorContainer = vendorRadio ? vendorRadio.closest('.cron-type-radio') : null;
+                            const costumeContainer = costumeRadio ? costumeRadio.closest('.cron-type-radio') : null;
+                            
+                            // Enable radio containers and set the correct one as selected
+                            if (vendorContainer) vendorContainer.classList.add('enabled');
+                            if (costumeContainer) costumeContainer.classList.add('enabled');
+                            
+                            if (vendorRadio) vendorRadio.checked = false;
+                            if (costumeRadio) costumeRadio.checked = true;
+                        });
+                    });
+                    
+                    clearCronsBtn.addEventListener('click', function() {
+                        // Uncheck all Preonne cron checkboxes (except disabled ones)
+                        const preonneCronCheckboxes = preonneCronContainer.querySelectorAll('.use-cron-level');
+                        preonneCronCheckboxes.forEach(checkbox => {
+                            if (!checkbox.disabled) {
+                                checkbox.checked = false;
+                                checkbox.dataset.manuallyChanged = 'true';
+                            }
+                            delete checkbox.dataset.cronType;
+                            
+                            // Also disable the radio buttons
+                            const id = checkbox.id;
+                            const index = id.replace('use-cron-level-', '');
+                            const vendorRadio = document.getElementById(`vendor-cron-${index}`);
+                            const costumeRadio = document.getElementById(`costume-cron-${index}`);
+                            
+                            // Get the radio containers
+                            const vendorContainer = vendorRadio ? vendorRadio.closest('.cron-type-radio') : null;
+                            const costumeContainer = costumeRadio ? costumeRadio.closest('.cron-type-radio') : null;
+                            
+                            // Only disable radio containers for non-disabled checkboxes
+                            if (!checkbox.disabled) {
+                                if (vendorContainer) vendorContainer.classList.remove('enabled');
+                                if (costumeContainer) costumeContainer.classList.remove('enabled');
+                                
+                                if (vendorRadio) vendorRadio.checked = false;
+                                if (costumeRadio) costumeRadio.checked = false;
+                            }
+                        });
+                    });
+                    
+                    // Add buttons to the selector container
+                    cronSelectorContainer.appendChild(vendorCronBtn);
+                    cronSelectorContainer.appendChild(costumeCronBtn);
+                    cronSelectorContainer.appendChild(clearCronsBtn);
+                    
+                    // Add the selector container after the title
+                    preonneCronContainer.appendChild(cronSelectorContainer);
+                    
+                    // Create cron buttons for each enhancement level
+                    for (let i = 0; i < enhancementCount; i++) {
+                        const currentLevel = levels[startIndex + i];
+                        const targetLevel = levels[startIndex + i + 1];
+                        
+                        // Create level container
+                        const levelContainer = createElement('div', {
+                            className: 'cron-level-container',
+                            style: 'display: flex; align-items: center; flex-wrap: wrap; margin-top: 10px;'
+                        });
+                        
+                        // Level label
+                        const levelLabel = createElement('div', {
+                            style: {
+                                minWidth: '120px', 
+                                fontWeight: 'bold',
+                                color: '#e0e0e0'
+                            }
+                        }, `${formatEnhancementLevel(currentLevel)} → ${formatEnhancementLevel(targetLevel)}:`);
+                        
+                        // Only show cron option if not enhancing from BASE level
+                        const isBaseLevel = (currentLevel === 'BASE');
+                        
+                        // Declare cronCheckbox, cronTooltip, and cronLabel outside the if-block so they're accessible to all scopes
+                        let cronCheckbox, cronTooltip, cronLabel;
+                        
+                        if (!isBaseLevel) {
+                            // Create cron checkbox
+                            cronCheckbox = createElement('input', {
+                                type: 'checkbox',
+                                id: `use-cron-level-${i}`,
+                                className: 'use-cron-level'
+                            });
+                            
+                            // Initialize cron checkbox - auto-check if it's the first level and not BASE
+                            if (i === 0 && !isBaseLevel) {
+                                cronCheckbox.checked = true;
+                                cronCheckbox.disabled = true; // Make it non-deselectable for required levels
+                                cronCheckbox.dataset.cronType = 'vendor'; // Default to vendor cron
+                            } else {
+                                cronCheckbox.checked = false;
+                            }
+                            
+                            // Add event listener to mark when checkbox is manually changed (only for non-disabled checkboxes)
+                            if (!cronCheckbox.disabled) {
+                                cronCheckbox.addEventListener('change', function() {
+                                    this.dataset.manuallyChanged = 'true';
+                                });
+                            }
+                            
+                            // Create tooltip with information about cron stones
+                            cronTooltip = createElement('span', {
+                                className: 'cron-tooltip',
+                                title: 'Cron stones prevent item downgrade on failure',
+                                style: 'margin-left: 5px; color: #777; cursor: help; font-size: 0.9em;'
+                            }, '(?)');
+                            
+                            // Label for checkbox
+                            const cronLabelText = (i === 0 && !isBaseLevel) ? '⚡ Cron (Required)' : '⚡ Cron';
+                            cronLabel = createElement('label', {
+                                for: `use-cron-level-${i}`,
+                                className: 'per-level-cron-label',
+                                style: 'margin-right: 10px; display: flex; align-items: center;'
+                            });
+                            
+                            // Add text and tooltip to label
+                            cronLabel.appendChild(document.createTextNode(cronLabelText));
+                            cronLabel.appendChild(cronTooltip);
+                            
+                            // Add level label to container first
+                            levelContainer.appendChild(levelLabel);
+                        } else {
+                            // If BASE level, just add label and a message that cron is not needed
+                            levelContainer.appendChild(levelLabel);
+                            const noCronMsg = createElement('span', {
+                                style: 'color: #777; font-style: italic;'
+                            }, 'No cron needed');
+                            levelContainer.appendChild(noCronMsg);
+                        }
+                        
+                        // Only create radio buttons if not BASE level
+                        let radioContainer, vendorRadio, costumeRadio, vendorRadioContainer, costumeRadioContainer;
+                        
+                        if (!isBaseLevel) {
+                            // Create container for cron controls (checkbox + radio buttons)
+                            const cronControlsContainer = createElement('div', {
+                                style: 'display: flex; align-items: center; gap: 10px;'
+                            });
+                            
+                            // Add checkbox and label to the controls container
+                            cronControlsContainer.appendChild(cronCheckbox);
+                            cronControlsContainer.appendChild(cronLabel);
+                            
+                            // Create container for radio buttons
+                            radioContainer = createElement('div', {
+                                className: 'cron-type-container',
+                                style: 'display: flex; align-items: center;'
+                            });
+                            
+                            // Create vendor radio button container
+                            vendorRadioContainer = createElement('div', {
+                                className: 'cron-type-radio'
+                            });
+                            
+                            // Create costume radio button container
+                            costumeRadioContainer = createElement('div', {
+                                className: 'cron-type-radio'
+                            });
+                            
+                            // Create vendor radio button
+                            vendorRadio = createElement('input', {
+                                type: 'radio',
+                                name: `cron-type-${i}`,
+                                id: `vendor-cron-${i}`,
+                                value: 'vendor',
+                            });
+                            
+                            // Create label for vendor
+                            const vendorLabel = createElement('label', {
+                                for: `vendor-cron-${i}`,
+                                style: 'margin-right: 10px; color: #3498db; font-size: 0.9em;'
+                            }, 'Vendor (3M)');
+                            
+                            // Create costume radio button
+                            costumeRadio = createElement('input', {
+                                type: 'radio',
+                                name: `cron-type-${i}`,
+                                id: `costume-cron-${i}`,
+                                value: 'costume',
+                            });
+                            
+                            // Create label for costume
+                            const costumeLabel = createElement('label', {
+                                for: `costume-cron-${i}`,
+                                style: 'color: #9b59b6; font-size: 0.9em;'
+                            }, 'Costume (2.2M)');
+                            
+                            // Only add event listeners if not at BASE level (and cronCheckbox exists)
+                            if (!isBaseLevel && cronCheckbox) {
+                                // Add event listeners for radio buttons
+                                vendorRadio.addEventListener('change', function() {
+                                    if (this.checked && cronCheckbox) {
+                                        cronCheckbox.dataset.cronType = 'vendor';
+                                        if (!cronCheckbox.disabled) {
+                                            cronCheckbox.checked = true;
+                                        }
+                                        
+                                        // Update background color to vendor blue
+                                        levelContainer.style.backgroundColor = 'rgba(52, 152, 219, 0.2)';
+                                    }
+                                });
+                                
+                                costumeRadio.addEventListener('change', function() {
+                                    if (this.checked && cronCheckbox) {
+                                        cronCheckbox.dataset.cronType = 'costume';
+                                        if (!cronCheckbox.disabled) {
+                                            cronCheckbox.checked = true;
+                                        }
+                                        
+                                        // Update background color to costume purple
+                                        levelContainer.style.backgroundColor = 'rgba(155, 89, 182, 0.2)';
+                                    }
+                                });
+                                
+                                // Add event listener to checkbox (only for non-disabled checkboxes)
+                                if (!cronCheckbox.disabled) {
+                                    cronCheckbox.addEventListener('change', function() {
+                                        if (!this.checked) {
+                                            // If unchecked, disable radio button containers
+                                            vendorRadioContainer.classList.remove('enabled');
+                                            costumeRadioContainer.classList.remove('enabled');
+                                            // Uncheck both radio buttons
+                                            vendorRadio.checked = false;
+                                            costumeRadio.checked = false;
+                                            // Remove cron type data
+                                            this.dataset.cronType = '';
+                                            // Reset background color
+                                            levelContainer.style.backgroundColor = 'rgba(155, 89, 182, 0.1)';
+                                        } else {
+                                            // If checked, enable radios and ensure one is selected
+                                            vendorRadioContainer.classList.add('enabled');
+                                            costumeRadioContainer.classList.add('enabled');
+                                            // Set vendor as default if none is selected
+                                            if (!vendorRadio.checked && !costumeRadio.checked) {
+                                                vendorRadio.checked = true;
+                                                this.dataset.cronType = 'vendor';
+                                                // Set vendor background color
+                                                levelContainer.style.backgroundColor = 'rgba(52, 152, 219, 0.2)';
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                            
+                            // Auto-select vendor radio for first level if not BASE
+                            if (i === 0 && !isBaseLevel && cronCheckbox && cronCheckbox.checked) {
+                                vendorRadio.checked = true;
+                                costumeRadio.checked = false;
+                                vendorRadioContainer.classList.add('enabled');
+                                costumeRadioContainer.classList.add('enabled');
+                            }
+                            
+                            // Add radio buttons to their containers
+                            vendorRadioContainer.appendChild(vendorRadio);
+                            vendorRadioContainer.appendChild(vendorLabel);
+                            costumeRadioContainer.appendChild(costumeRadio);
+                            costumeRadioContainer.appendChild(costumeLabel);
+                            
+                            // Add radio containers to main container
+                            radioContainer.appendChild(vendorRadioContainer);
+                            radioContainer.appendChild(costumeRadioContainer);
+                            
+                            // Add radio container to the cron controls container
+                            cronControlsContainer.appendChild(radioContainer);
+                            
+                            // Add the complete cron controls container to the level container
+                            levelContainer.appendChild(cronControlsContainer);
+                        }
+                        
+                        // Add level container to the Preonne cron container
+                        preonneCronContainer.appendChild(levelContainer);
+                    }
+                    
+                    // Add the title and cron container to the failstack container
+                    preonneCronContainer.insertBefore(cronTitle, preonneCronContainer.firstChild);
+                    failstackContainer.appendChild(preonneCronContainer);
+                    
                     // Enable calculate button
                     calculateBtn.disabled = false;
                     return;
@@ -1186,6 +1531,144 @@ document.addEventListener('DOMContentLoaded', async function() {
                     className: 'global-softcap-container' 
                 }, [globalSoftcapCheckbox, globalSoftcapLabel]);
                 
+                // Create a container for cron selector buttons
+                const cronSelectorContainer = createElement('div', {
+                    className: 'cron-selector-container',
+                    style: 'display: flex; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 5px;'
+                });
+                
+                // Create buttons for selecting all cron types
+                const vendorCronBtn = createElement('button', {
+                    type: 'button',
+                    className: 'btn btn-sm btn-primary',
+                    style: 'background-color: #3498db; border: none; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.9em;'
+                }, 'Select All Vendor Crons');
+                
+                const costumeCronBtn = createElement('button', {
+                    type: 'button',
+                    className: 'btn btn-sm btn-secondary',
+                    style: 'background-color: #9b59b6; border: none; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.9em;'
+                }, 'Select All Costume Crons');
+                
+                const clearCronsBtn = createElement('button', {
+                    type: 'button',
+                    className: 'btn btn-sm btn-danger',
+                    style: 'background-color: #e74c3c; border: none; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.9em;'
+                }, 'Clear All Crons');
+                
+                // Add event listeners to the buttons
+                vendorCronBtn.addEventListener('click', function() {
+                    // Select all per-level cron checkboxes as vendor crons (except disabled ones)
+                    const perLevelCronCheckboxes = document.querySelectorAll('.use-cron-level');
+                    perLevelCronCheckboxes.forEach(checkbox => {
+                        if (!checkbox.disabled) {
+                            checkbox.checked = true;
+                            checkbox.dataset.manuallyChanged = 'true';
+                        }
+                        checkbox.dataset.cronType = 'vendor';
+                        
+                        // Also update the vendor radio button
+                        const id = checkbox.id;
+                        const index = id.replace('use-cron-level-', '');
+                        const vendorRadio = document.getElementById(`vendor-cron-${index}`);
+                        const costumeRadio = document.getElementById(`costume-cron-${index}`);
+                        
+                        // Get the radio containers
+                        const vendorContainer = vendorRadio ? vendorRadio.closest('.cron-type-radio') : null;
+                        const costumeContainer = costumeRadio ? costumeRadio.closest('.cron-type-radio') : null;
+                        
+                        // Enable radio containers and set the correct one as selected
+                        if (vendorContainer) vendorContainer.classList.add('enabled');
+                        if (costumeContainer) costumeContainer.classList.add('enabled');
+                        
+                        if (vendorRadio) vendorRadio.checked = true;
+                        if (costumeRadio) costumeRadio.checked = false;
+                        
+                        // Update styles if needed
+                        const container = checkbox.closest('.cron-level-container');
+                        if (container) {
+                            container.style.backgroundColor = 'rgba(52, 152, 219, 0.2)';
+                        }
+                    });
+                });
+                
+                costumeCronBtn.addEventListener('click', function() {
+                    // Select all per-level cron checkboxes as costume crons (except disabled ones)
+                    const perLevelCronCheckboxes = document.querySelectorAll('.use-cron-level');
+                    perLevelCronCheckboxes.forEach(checkbox => {
+                        if (!checkbox.disabled) {
+                            checkbox.checked = true;
+                            checkbox.dataset.manuallyChanged = 'true';
+                        }
+                        checkbox.dataset.cronType = 'costume';
+                        
+                        // Also update the costume radio button
+                        const id = checkbox.id;
+                        const index = id.replace('use-cron-level-', '');
+                        const vendorRadio = document.getElementById(`vendor-cron-${index}`);
+                        const costumeRadio = document.getElementById(`costume-cron-${index}`);
+                        
+                        // Get the radio containers
+                        const vendorContainer = vendorRadio ? vendorRadio.closest('.cron-type-radio') : null;
+                        const costumeContainer = costumeRadio ? costumeRadio.closest('.cron-type-radio') : null;
+                        
+                        // Enable radio containers and set the correct one as selected
+                        if (vendorContainer) vendorContainer.classList.add('enabled');
+                        if (costumeContainer) costumeContainer.classList.add('enabled');
+                        
+                        if (vendorRadio) vendorRadio.checked = false;
+                        if (costumeRadio) costumeRadio.checked = true;
+                        
+                        // Update styles if needed
+                        const container = checkbox.closest('.cron-level-container');
+                        if (container) {
+                            container.style.backgroundColor = 'rgba(155, 89, 182, 0.2)';
+                        }
+                    });
+                });
+                
+                clearCronsBtn.addEventListener('click', function() {
+                    // Uncheck all per-level cron checkboxes (except disabled ones)
+                    const perLevelCronCheckboxes = document.querySelectorAll('.use-cron-level');
+                    perLevelCronCheckboxes.forEach(checkbox => {
+                        if (!checkbox.disabled) {
+                            checkbox.checked = false;
+                            checkbox.dataset.manuallyChanged = 'true';
+                        }
+                        delete checkbox.dataset.cronType;
+                        
+                        // Disable the radio containers
+                        const id = checkbox.id;
+                        const index = id.replace('use-cron-level-', '');
+                        const vendorRadio = document.getElementById(`vendor-cron-${index}`);
+                        const costumeRadio = document.getElementById(`costume-cron-${index}`);
+                        
+                        // Get the radio containers
+                        const vendorContainer = vendorRadio ? vendorRadio.closest('.cron-type-radio') : null;
+                        const costumeContainer = costumeRadio ? costumeRadio.closest('.cron-type-radio') : null;
+                        
+                        // Only disable radio containers for non-disabled checkboxes
+                        if (!checkbox.disabled) {
+                            if (vendorContainer) vendorContainer.classList.remove('enabled');
+                            if (costumeContainer) costumeContainer.classList.remove('enabled');
+                            
+                            if (vendorRadio) vendorRadio.checked = false;
+                            if (costumeRadio) costumeRadio.checked = false;
+                        }
+                        
+                        // Reset styles if needed
+                        const container = checkbox.closest('.cron-level-container');
+                        if (container) {
+                            container.style.backgroundColor = 'rgba(155, 89, 182, 0.1)';
+                        }
+                    });
+                });
+                
+                // Add buttons to the container
+                cronSelectorContainer.appendChild(vendorCronBtn);
+                cronSelectorContainer.appendChild(costumeCronBtn);
+                cronSelectorContainer.appendChild(clearCronsBtn);
+                
                 // Store input references and recommended FS values for each field
                 const inputFields = [];
                 const recommendedFSValues = [];
@@ -1194,6 +1677,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 globalSoftcapContainer.appendChild(globalSoftcapCheckbox);
                 globalSoftcapContainer.appendChild(globalSoftcapLabel);
                 failstackContainer.appendChild(globalSoftcapContainer);
+                failstackContainer.appendChild(cronSelectorContainer);
                 
                 // Generate failstack input fields
                 for (let i = 0; i < enhancementCount; i++) {
@@ -1215,10 +1699,186 @@ document.addEventListener('DOMContentLoaded', async function() {
                     
                     // Create input group
                     const inputGroup = createElement('div', { 
-                        className: 'input-group' 
+                        className: 'input-group',
+                        style: 'display: flex; align-items: center;'
                     }, [input]);
                     
-                    // Create label
+                    // Only show cron checkbox for non-BASE levels (since BASE level can't downgrade)
+                    // The currentLevel is the level before enhancement, targetLevel is after
+                    const isFirstLevel = (i === 0);
+                    const isBaseLevel = (currentLevel === 'BASE');
+                    
+                    if (!isBaseLevel) {
+                        // Create container for cron checkbox and type selection
+                        const cronLevelContainer = createElement('div', {
+                            className: 'cron-level-container',
+                            style: 'display: flex; align-items: center; margin-left: 10px; padding: 2px 5px; border-radius: 4px; background-color: rgba(155, 89, 182, 0.1);'
+                        });
+                        
+                        // Create cron checkbox (smaller with lightning bolt icon)
+                        const cronCheckbox = createElement('input', {
+                            type: 'checkbox',
+                            id: `use-cron-level-${i}`,
+                            className: 'use-cron-level'
+                        });
+                        
+                        // Initialize cron checkbox - auto-check if it's the first level and not BASE
+                        if (isFirstLevel && !isBaseLevel) {
+                            cronCheckbox.checked = true;
+                            cronCheckbox.disabled = true; // Make it non-deselectable for required levels
+                            cronCheckbox.dataset.cronType = 'vendor'; // Default to vendor cron
+                            // Add visual indicator that this is mandatory
+                            cronLevelContainer.style.backgroundColor = 'rgba(52, 152, 219, 0.2)';
+                            cronLevelContainer.style.border = '1px solid #3498db';
+                        } else {
+                            cronCheckbox.checked = false;
+                        }
+                        
+                        // Add event listener to mark when checkbox is manually changed (only for non-disabled checkboxes)
+                        if (!cronCheckbox.disabled) {
+                            cronCheckbox.addEventListener('change', function() {
+                                this.dataset.manuallyChanged = 'true';
+                            });
+                        }
+                        
+                        // Create label for cron checkbox
+                        const cronLabelText = (isFirstLevel && !isBaseLevel) ? '⚡ Cron (Required)' : '⚡ Cron';
+                        const cronLabel = createElement('label', {
+                            for: `use-cron-level-${i}`,
+                            className: 'per-level-cron-label',
+                            style: 'margin-right: 10px;'
+                        }, cronLabelText);
+                        
+                        // Create container for radio buttons
+                        const radioContainer = createElement('div', {
+                            className: 'cron-type-container',
+                            style: 'display: flex; align-items: center;'
+                        });
+                        
+                        // Create vendor cron radio button
+                        const vendorRadio = createElement('input', {
+                            type: 'radio',
+                            name: `cron-type-${i}`,
+                            id: `vendor-cron-${i}`,
+                            value: 'vendor',
+                            className: 'cron-type-radio vendor'
+                        });
+                        
+                        // Create label for vendor radio button
+                        const vendorLabel = createElement('label', {
+                            for: `vendor-cron-${i}`,
+                            style: 'margin-right: 10px; color: #3498db; font-size: 0.9em;'
+                        }, 'Vendor (3M)');
+                        
+                        // Create costume cron radio button
+                        const costumeRadio = createElement('input', {
+                            type: 'radio',
+                            name: `cron-type-${i}`,
+                            id: `costume-cron-${i}`,
+                            value: 'costume',
+                            className: 'cron-type-radio costume'
+                        });
+                        
+                        // Create label for costume radio button
+                        const costumeLabel = createElement('label', {
+                            for: `costume-cron-${i}`,
+                            style: 'color: #9b59b6; font-size: 0.9em;'
+                        }, 'Costume (2.2M)');
+                        
+                        // Initialize radio buttons - auto-select vendor for first level if not BASE
+                        if (isFirstLevel && !isBaseLevel) {
+                            vendorRadio.checked = true;
+                            costumeRadio.checked = false;
+                        } else {
+                            vendorRadio.checked = false;
+                            costumeRadio.checked = false;
+                        }
+                        
+                        // Create vendor and costume radio button containers with proper CSS classes
+                        const vendorRadioContainer = createElement('div', {
+                            className: 'cron-type-radio'
+                        });
+                        
+                        const costumeRadioContainer = createElement('div', {
+                            className: 'cron-type-radio'
+                        });
+                        
+                        // Add event listeners to radios to update the checkbox data attribute
+                        vendorRadio.addEventListener('change', function() {
+                            if (this.checked) {
+                                cronCheckbox.dataset.cronType = 'vendor';
+                                cronCheckbox.checked = true;
+                                
+                                // Update background color to vendor blue
+                                cronLevelContainer.style.backgroundColor = 'rgba(52, 152, 219, 0.2)';
+                            }
+                        });
+                        
+                        costumeRadio.addEventListener('change', function() {
+                            if (this.checked) {
+                                cronCheckbox.dataset.cronType = 'costume';
+                                cronCheckbox.checked = true;
+                                
+                                // Update background color to costume purple
+                                cronLevelContainer.style.backgroundColor = 'rgba(155, 89, 182, 0.2)';
+                            }
+                        });
+                        
+                        // Add event listener to checkbox to ensure radios match checkbox state (only for non-disabled checkboxes)
+                        if (!cronCheckbox.disabled) {
+                            cronCheckbox.addEventListener('change', function() {
+                                if (!this.checked) {
+                                    // If unchecked, disable radio button containers
+                                    vendorRadioContainer.classList.remove('enabled');
+                                    costumeRadioContainer.classList.remove('enabled');
+                                    // Uncheck both radio buttons
+                                    vendorRadio.checked = false;
+                                    costumeRadio.checked = false;
+                                    // Remove cron type data
+                                    this.dataset.cronType = '';
+                                    // Reset background color
+                                    cronLevelContainer.style.backgroundColor = 'rgba(155, 89, 182, 0.1)';
+                                } else {
+                                    // If checked, enable radios and ensure one is selected
+                                    vendorRadioContainer.classList.add('enabled');
+                                    costumeRadioContainer.classList.add('enabled');
+                                    // Set vendor as default if none is selected
+                                    if (!vendorRadio.checked && !costumeRadio.checked) {
+                                        vendorRadio.checked = true;
+                                        this.dataset.cronType = 'vendor';
+                                        // Set vendor background color
+                                        cronLevelContainer.style.backgroundColor = 'rgba(52, 152, 219, 0.2)';
+                                    }
+                                }
+                            });
+                        }
+                        
+                        // Add radio buttons to their containers
+                        vendorRadioContainer.appendChild(vendorRadio);
+                        vendorRadioContainer.appendChild(vendorLabel);
+                        costumeRadioContainer.appendChild(costumeRadio);
+                        costumeRadioContainer.appendChild(costumeLabel);
+                        
+                        // Add radio containers to main container
+                        radioContainer.appendChild(vendorRadioContainer);
+                        radioContainer.appendChild(costumeRadioContainer);
+                        
+                        // Enable radio containers if first level is auto-checked
+                        if (isFirstLevel && !isBaseLevel && cronCheckbox.checked) {
+                            vendorRadioContainer.classList.add('enabled');
+                            costumeRadioContainer.classList.add('enabled');
+                        }
+                        
+                        // Add elements to cron container
+                        cronLevelContainer.appendChild(cronCheckbox);
+                        cronLevelContainer.appendChild(cronLabel);
+                        cronLevelContainer.appendChild(radioContainer);
+                        
+                        // Add cron level container to input group
+                        inputGroup.appendChild(cronLevelContainer);
+                    }
+                    
+                    // Create label for failstack
                     const label = createElement('label', {}, 
                         `Failstack for ${currentLevel} → ${targetLevel}:`
                     );
@@ -1282,8 +1942,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         let totalCronCost = 0;
         let totalCronCount = 0;
         
-        // Check if we're using cron stones, memory fragments, and artisan's memory
-        const useCron = (useCronCheckbox && useCronCheckbox.checked) || (useCostumeCronCheckbox && useCostumeCronCheckbox.checked);
+        // Check if we're using memory fragments and artisan's memory
         const useMemFrags = useMemFragsCheckbox && useMemFragsCheckbox.checked;
         const useArtisan = useArtisanMemoryCheckbox && useArtisanMemoryCheckbox.checked;
         
@@ -1297,9 +1956,25 @@ document.addEventListener('DOMContentLoaded', async function() {
             const startIndex = levels.indexOf(startLevel);
             const currentLevel = levels[startIndex + index];
             
+            // Check if the per-level cron checkbox is checked
+            const perLevelCronCheckbox = document.getElementById(`use-cron-level-${index}`);
+            const perLevelCronEnabled = perLevelCronCheckbox ? perLevelCronCheckbox.checked : false;
+            
+            // First level (index 0) behaves differently since it can't downgrade
+            const isFirstLevel = (index === 0);
+            // BASE level cannot downgrade, so no need for cron
+            const isBaseLevel = (currentLevel === 'BASE');
+            
             // Determine if we should use cron stones for this specific level
-            // If not using cron globally, still use cron for the first level to prevent downgrade below starting level
-            const useCronForThisLevel = useCron || (index === 0 && currentLevel !== 'BASE');
+            let useCronForThisLevel = false;
+            
+            if (!isBaseLevel) {
+                // Check per-level cron checkbox first if it exists
+                if (perLevelCronCheckbox) {
+                    // Use the per-level checkbox value
+                    useCronForThisLevel = perLevelCronEnabled;
+                }
+            }
             useCronPerLevelArray.push(useCronForThisLevel);
             
             // Calculate success chance using the utility function
@@ -1337,12 +2012,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Get the cost for this attempt (asynchronously) - use cron based on per-level decision
             // For Artisan's Memory, use the checkbox from the calculator tab
             const useArtisanForCalculator = useArtisanMemoryCheckbox && useArtisanMemoryCheckbox.checked;
+            
+            // Determine cron type for this level based on the checkbox data attribute
+            let isUsingCostumeCronForThisLevel = null;
+            if (useCronForThisLevel && perLevelCronCheckbox && perLevelCronCheckbox.dataset.cronType) {
+                isUsingCostumeCronForThisLevel = perLevelCronCheckbox.dataset.cronType === 'costume';
+            }
+            
             const costDetails = await calculateAttemptCost(
                 item, 
                 currentLevel, 
                 useCronForThisLevel,
                 useMemFrags,
-                null, // Let it auto-detect costume cron
+                isUsingCostumeCronForThisLevel, // Pass the specific cron type for this level
                 useArtisanForCalculator // Explicitly pass Artisan's Memory setting
             );
             
@@ -1388,17 +2070,25 @@ document.addEventListener('DOMContentLoaded', async function() {
                         const prevFS = previousLevels[prevIdx].failstack;
                         
                         // Determine if we should use cron for this recovery level
-                        // If it's the very first level (to prevent downgrade below starting level), use cron
-                        const useCronForRecovery = useCron || (prevIdx === 0 && prevLevel !== 'BASE');
+                        // Use the same logic as the main enhancement level - check per-level checkbox
+                        const recoveryLevelCronCheckbox = document.getElementById(`use-cron-level-${prevIdx}`);
+                        const recoveryLevelCronEnabled = recoveryLevelCronCheckbox ? recoveryLevelCronCheckbox.checked : false;
+                        const useCronForRecovery = recoveryLevelCronEnabled;
                         
-                        // Get cost of one attempt at this level - using the same cron stone logic
+                        // Determine cron type for this recovery level
+                        let isUsingCostumeCronForRecovery = null;
+                        if (useCronForRecovery && recoveryLevelCronCheckbox && recoveryLevelCronCheckbox.dataset.cronType) {
+                            isUsingCostumeCronForRecovery = recoveryLevelCronCheckbox.dataset.cronType === 'costume';
+                        }
+                        
+                        // Get cost of one attempt at this level - using the per-level cron logic
                         // Use the same Artisan's Memory setting as the main calculation
                         const levelCostDetails = await calculateAttemptCost(
                             item, 
                             prevLevel, 
                             useCronForRecovery, 
                             useMemFrags, 
-                            null, // Auto-detect costume cron
+                            isUsingCostumeCronForRecovery, // Pass the specific cron type
                             useArtisanForCalculator // Use same Artisan setting
                         );
                         
@@ -1423,9 +2113,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                             const cronStoneCount = enhancementItemRequirements[item]?.[prevLevel]?.cronStones || 0;
                             const levelCronCount = cronStoneCount * levelExpectedAttempts * recoveryCostMultiplier;
                             
-                            // Check which type of cron stones we're using
+                            // Check which type of cron stones we're using for this recovery level
                             let cronPrice;
-                            if (useCostumeCronCheckbox && useCostumeCronCheckbox.checked) {
+                            if (isUsingCostumeCronForRecovery) {
                                 cronPrice = 2185297; // Costume cron price
                             } else {
                                 cronPrice = 3000000; // Vendor cron price (3 million per cron stone)
@@ -1512,7 +2202,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             let totalAttemptsForThisLevel = expectedAttempts;
             
             // If not using cron stones and we're not at base level, add recovery attempts
-            if (!useCron && currentLevel !== 'BASE' && index > 0) {
+            if (!useCronForThisLevel && currentLevel !== 'BASE' && index > 0) {
                 // Calculate recovery attempts from all previous levels
                 const expectedDowngrades = failChance / successChance;
                 let recoveryAttempts = 0;
@@ -1632,7 +2322,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             totalCronCost: Math.round(totalCronCost),
             totalCronCount: Math.round(totalCronCount),
             includeMemFrags: useMemFrags,
-            useCronStones: useCron,
+            useCronStones: useCronPerLevelArray.some(value => value), // Check if any level uses cron stones
             useArtisanMemory: useArtisan,
             useCronPerLevel: useCronPerLevelArray // Track which levels used cron stones
         };
@@ -1655,7 +2345,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         const costInfo = createElement('p', {}, '');
         // Always show the total cost without specifying components in this line
-        costInfo.innerHTML = `<strong>Estimated Total Cost:</strong> ${results.totalCost.toLocaleString()} Silver`
+        costInfo.innerHTML = `<strong>Estimated Total Cost:</strong> ${results.totalCost.toLocaleString()} Silver`;
         
         // Always add cost breakdown section
         const costBreakdown = createElement('div', { className: 'cost-breakdown' });
@@ -1663,87 +2353,61 @@ document.addEventListener('DOMContentLoaded', async function() {
         costBreakdown.style.fontSize = '0.9em';
         costBreakdown.style.marginTop = '5px';
         
-        // Check if any cron stones were used (either globally or for first level only)
+        // Start with material cost
+        costBreakdown.innerHTML = `• <strong>Material Cost:</strong> ${Math.round(results.totalMaterialCost).toLocaleString()} Silver`;
+        
+        // Check if any cron stones were used
         if (results.totalCronCount > 0) {
-            // Global cron stones enabled (either regular or costume)
-            if ((useCronCheckbox && useCronCheckbox.checked) || (useCostumeCronCheckbox && useCostumeCronCheckbox.checked)) {
-                costBreakdown.innerHTML = 
-                    `• <strong>Material Cost:</strong> ${Math.round(results.totalMaterialCost).toLocaleString()} Silver<br>` +
-                    `• <strong>Cron Stones:</strong> ${Math.round(results.totalCronCount).toLocaleString()} stones (${Math.round(results.totalCronCost).toLocaleString()} Silver)`;
-            } 
-            // Only first level cron stones (protection from downgrade below starting level)
-            else {
-                // Calculate cron stones from direct enhancement and from recovery attempts
-                const directEnhancementCronCount = results.cronStoneCount[0] > 0 ? Math.round(results.cronStoneCount[0]) : 0;
-                const directEnhancementCronCost = results.cronCost[0] > 0 ? Math.round(results.cronCost[0]) : 0;
-                
-                // Calculate total cron cost from recovery attempts (difference between total and direct)
-                const recoveryCronCount = Math.max(0, Math.round(results.totalCronCount - directEnhancementCronCount));
-                const recoveryCronCost = Math.max(0, Math.round(results.totalCronCost - directEnhancementCronCost));
-                
-                if (directEnhancementCronCount > 0 || recoveryCronCount > 0) {
-                    costBreakdown.innerHTML = 
-                        `• <strong>Material Cost:</strong> ${Math.round(results.totalMaterialCost).toLocaleString()} Silver<br>` +
-                        `• <strong>Total Cron Stone Usage:</strong> ${Math.round(results.totalCronCount).toLocaleString()} stones (${Math.round(results.totalCronCost).toLocaleString()} Silver)`;
-                    
-                    // Add breakdown of direct vs recovery cron usage
-                    costBreakdown.innerHTML +=
-                        `<br><span style="margin-left: 15px; color: #2ecc71;">↳ Direct enhancement: ${directEnhancementCronCount.toLocaleString()} stones (${directEnhancementCronCost.toLocaleString()} Silver)</span>`;
-                    
-                    if (recoveryCronCount > 0) {
-                        costBreakdown.innerHTML +=
-                            `<br><span style="margin-left: 15px; color: #e74c3c;">↳ Recovery attempts: ${recoveryCronCount.toLocaleString()} stones (${recoveryCronCost.toLocaleString()} Silver)</span>`;
-                    }
-                    
-                    costBreakdown.innerHTML +=
-                        `<br><span style="color: #2ecc71; font-size: 0.9em;">Protection against downgrade below ${formatEnhancementLevel(results.startLevel)}</span>`;
-                }
-            }
+            // Calculate cron stones from direct enhancement and from recovery attempts
+            const directEnhancementCronCount = results.cronStoneCount[0] > 0 ? Math.round(results.cronStoneCount[0]) : 0;
+            const directEnhancementCronCost = results.cronCost[0] > 0 ? Math.round(results.cronCost[0]) : 0;
             
-            if (results.includeMemFrags) {
-                if (useArtisanMemoryCheckbox && useArtisanMemoryCheckbox.checked) {
-                    // Use the total original fragments count that we now track separately
-                    // Display with proper rounding
-                    const originalFragCount = results.totalOriginalMemFragsCount;
-                    const memFragPrice = marketPrices[currentRegion][44195] || 0;
-                    
-                    // Recalculate the actual fragment count with Artisan's Memory using the proper formula
-                    // Integer division (whole part)
-                    const wholePart = Math.floor(originalFragCount / 5);
-                    // Remainder calculation
-                    const remainder = originalFragCount % 5;
-                    // If there's a remainder, we need one more fragment
-                    const artisanFragCount = remainder > 0 ? wholePart + 1 : wholePart;
-                    
-                    // Calculate costs based on the recalculated fragment count
-                    const artisanCost = artisanFragCount * memFragPrice;
-                    const originalCost = originalFragCount * memFragPrice;
-                    const savings = originalCost - artisanCost;
-                    
-                    costBreakdown.innerHTML += `<br>• <strong>Memory Fragments:</strong> ${artisanFragCount.toLocaleString()} fragments with Artisan's Memory (${Math.round(artisanCost).toLocaleString()} Silver)`;
-                    costBreakdown.innerHTML += `<br><span style="margin-left: 15px; font-size: 0.9em; color: #27ae60;">✓ Saved ~${Math.round(savings).toLocaleString()} Silver by using Artisan's Memory (reduced from ${originalFragCount.toLocaleString()} fragments)</span>`;
-                } else {
-                    costBreakdown.innerHTML += `<br>• <strong>Memory Fragments:</strong> ${results.totalMemFragsCount.toLocaleString()} fragments (${Math.round(results.totalMemFragsCost).toLocaleString()} Silver)`;
-                }
-            }
+            // Calculate total cron cost from recovery attempts (difference between total and direct)
+            const recoveryCronCount = Math.max(0, Math.round(results.totalCronCount - directEnhancementCronCount));
+            const recoveryCronCost = Math.max(0, Math.round(results.totalCronCost - directEnhancementCronCost));
             
-            costInfo.appendChild(costBreakdown);
-        } 
-        // No cron stones used at all
-        else if (results.includeMemFrags) {
-            costBreakdown.innerHTML = 
-                `• <strong>Material Cost:</strong> ${Math.round(results.totalMaterialCost).toLocaleString()} Silver<br>` +
-                `• <strong>Memory Fragments:</strong> ${results.totalMemFragsCount.toLocaleString()} fragments (${Math.round(results.totalMemFragsCost).toLocaleString()} Silver)`;
-            costInfo.appendChild(costBreakdown);
+            // Show cron costs
+            costBreakdown.innerHTML += `<br>• <strong>Total Cron Stone Usage:</strong> ${Math.round(results.totalCronCount).toLocaleString()} stones (${Math.round(results.totalCronCost).toLocaleString()} Silver)`;
         }
+        
+        // Add memory fragment information if included
+        if (results.includeMemFrags) {
+            if (useArtisanMemoryCheckbox && useArtisanMemoryCheckbox.checked) {
+                // Use the total original fragments count that we now track separately
+                // Display with proper rounding
+                const originalFragCount = results.totalOriginalMemFragsCount;
+                const memFragPrice = marketPrices[currentRegion][44195] || 0;
+                
+                // Recalculate the actual fragment count with Artisan's Memory using the proper formula
+                // Integer division (whole part)
+                const wholePart = Math.floor(originalFragCount / 5);
+                // Remainder calculation
+                const remainder = originalFragCount % 5;
+                // If there's a remainder, we need one more fragment
+                const artisanFragCount = remainder > 0 ? wholePart + 1 : wholePart;
+                
+                // Calculate costs based on the recalculated fragment count
+                const artisanCost = artisanFragCount * memFragPrice;
+                const originalCost = originalFragCount * memFragPrice;
+                const savings = originalCost - artisanCost;
+                
+                costBreakdown.innerHTML += `<br>• <strong>Memory Fragments:</strong> ${artisanFragCount.toLocaleString()} fragments with Artisan's Memory (${Math.round(artisanCost).toLocaleString()} Silver)`;
+                costBreakdown.innerHTML += `<br><span style="margin-left: 15px; font-size: 0.9em; color: #27ae60;">✓ Saved ~${Math.round(savings).toLocaleString()} Silver by using Artisan's Memory (reduced from ${originalFragCount.toLocaleString()} fragments)</span>`;
+            } else {
+                costBreakdown.innerHTML += `<br>• <strong>Memory Fragments:</strong> ${results.totalMemFragsCount.toLocaleString()} fragments (${Math.round(results.totalMemFragsCost).toLocaleString()} Silver)`;
+            }
+        }
+        
+        // Always add the cost breakdown to the cost info
+        costInfo.appendChild(costBreakdown);
         
         const attemptsInfo = createElement('p', {}, '');
         
         // Always show the total attempts
         attemptsInfo.innerHTML = `<strong>Estimated Total Attempts:</strong> ${results.attemptsPrediction}`;
         
-        // Show additional breakdown for recovery attempts if any
-        if ((!useCronCheckbox || !useCronCheckbox.checked) && (!useCostumeCronCheckbox || !useCostumeCronCheckbox.checked)) {
+        // Show additional breakdown for recovery attempts if not using cron for any level
+        if (!results.useCronStones) {
             // Calculate total direct and recovery attempts
             let totalDirectAttempts = 0;
             let totalRecoveryAttempts = 0;
@@ -1808,7 +2472,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             // Check if the original failstack was different than the current one
             // This happens when automatic failstack increment is applied with cron stones
-            if ((useCronCheckbox && useCronCheckbox.checked) || (useCostumeCronCheckbox && useCostumeCronCheckbox.checked)) {
+            if (results.useCronPerLevel[i]) {
                 const origFS = results.originalFailstacks[i];
                 if (origFS !== results.failstackUsage[i]) {
                     detailContent += `Failstack: <span style="text-decoration: line-through;">${origFS}</span> → <span style="color: green; font-weight: bold;">${results.failstackUsage[i]}</span>, `;
@@ -1824,8 +2488,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Add direct attempts info with raw calculation
             const rawAttempts = results.rawAttempts[i] || (100/parseFloat(results.successChances[i])).toFixed(2);
             
-            // Check if cron stones are used
-            const usingCron = (useCronCheckbox && useCronCheckbox.checked) || (useCostumeCronCheckbox && useCostumeCronCheckbox.checked);
+            // Check if cron stones are used for this level
+            const usingCron = results.useCronPerLevel[i];
             
             // Display direct attempts
             if (usingCron) {
@@ -1837,7 +2501,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             
             // Add recovery attempts if not using cron and recovery attempts exist
-            if (!((useCronCheckbox && useCronCheckbox.checked) || (useCostumeCronCheckbox && useCostumeCronCheckbox.checked)) && results.recoveryAttempts && results.recoveryAttempts[i] > 0) {
+            if (!results.useCronPerLevel[i] && results.recoveryAttempts && results.recoveryAttempts[i] > 0) {
                 detailContent += `, <span style="color: #e74c3c;">Recovery Attempts: ${results.recoveryAttempts[i].toFixed(2)}</span>`;
                 
                 // Calculate total attempts for this level
@@ -1852,8 +2516,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             // Add cron stone cost details if cron stones are used for this level
             if (results.useCronPerLevel && results.useCronPerLevel[i] && results.cronCost && results.cronCost[i] > 0) {
-                // Special message for first level cron when global cron is disabled
-                if (i === 0 && !((useCronCheckbox && useCronCheckbox.checked) || (useCostumeCronCheckbox && useCostumeCronCheckbox.checked))) {
+                // Special message for first level cron when not using cron for all levels
+                if (i === 0 && !results.useCronStones) {
                     detailContent += `<br><span style="margin-left: 15px; color: #2ecc71;">• Base Protection Cron Stones: ${Math.round(results.cronStoneCount[i]).toLocaleString()} (${Math.round(results.cronCost[i]).toLocaleString()} Silver)</span>`;
                     
                     // Calculate how many cron stones are used for recovery attempts for this level
@@ -1897,7 +2561,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
                                 
             // Add note about downgrades if not using cron and not enhancing from BASE level
-            if (!((useCronCheckbox && useCronCheckbox.checked) || (useCostumeCronCheckbox && useCostumeCronCheckbox.checked)) && currentLevel !== 'BASE') {
+            if (!results.useCronPerLevel[i] && currentLevel !== 'BASE') {
                 // We've already added recovery attempts details inline in the earlier content
             }
             
@@ -1919,8 +2583,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         note.className = 'note';
         
         // Different note based on whether cron stones are used
-        if ((useCronCheckbox && useCronCheckbox.checked) || (useCostumeCronCheckbox && useCostumeCronCheckbox.checked)) {
-            let cronType = useCronCheckbox && useCronCheckbox.checked ? "Vendor Cron Stones (3M silver per cron)" : "Costume Cron Stones (2,185,297 silver per cron)";
+        if (results.useCronStones) {
+            // Determine the cron type based on the per-level settings
+            // Since we can have mixed types (some levels using vendor, some using costume),
+            // we'll just use generic language
+            let cronType = "Cron Stones";
             note.innerHTML = `<strong>Note:</strong> These calculations include ${cronType} costs. Cron Stones prevent item downgrades but durability is still lost.<br>` +
                            '<strong>Failstack Increments:</strong> When using cron stones, the calculator simulates automatic failstack increments that would naturally occur from failed attempts.<br>' +
                            '<span style="color: #ff0000; font-weight: bold; font-size: 1.1em;">Important: The cost of building failstacks is not included in these calculations.</span>';
@@ -2339,6 +3006,30 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Simulation function
     async function runSimulation(item, startLevel, targetLevel, startingFS, attempts, useCron, useMemFrags, praygeOption, isUsingCostumeCron = false, useArtisan = false) {
+        // Check if per-level cron settings are available for this item
+        const useCronPerLevel = [];
+        const cronTypePerLevel = [];
+        const levels = enhancementLevels[item];
+        const startIndex = levels.indexOf(startLevel);
+        const targetIndex = levels.indexOf(targetLevel);
+        
+        // If we have per-level cron checkboxes, use those settings instead of global useCron
+        let hasPerLevelCron = false;
+        for (let i = 0; i < (targetIndex - startIndex); i++) {
+            const perLevelCronCheckbox = document.getElementById(`use-cron-level-${i}`);
+            if (perLevelCronCheckbox) {
+                hasPerLevelCron = true;
+                useCronPerLevel.push(perLevelCronCheckbox.checked);
+                cronTypePerLevel.push(perLevelCronCheckbox.dataset.cronType === 'costume');
+            } else {
+                // If no per-level checkbox, use the global setting
+                useCronPerLevel.push(useCron);
+                cronTypePerLevel.push(isUsingCostumeCron);
+            }
+        }
+        
+        // If we don't have any per-level settings, just use the global setting
+        const usePerLevelSettings = hasPerLevelCron;
         // Results to track
         const results = {
             item: item,
@@ -2360,14 +3051,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Run the simulation for the specified number of attempts
         let currentFS = startingFS;
-        
-        // Get the item cost once to use for all attempts (to avoid too many API calls)
-        // Pass isUsingCostumeCron and useArtisan to calculateAttemptCost so it uses the correct settings
-        const baseAttemptCost = await calculateAttemptCost(item, startLevel, useCron, useMemFrags, isUsingCostumeCron, useArtisan);
+        let currentEnhancementIndex = 0; // Track which level we're currently enhancing
         
         // Store the durability loss per attempt and mem frags per durability for later calculations
         results.durabilityLossPerAttempt = enhancementItemRequirements[item]?.durabilityLoss || 0;
         results.memFragPerDurability = enhancementItemRequirements[item]?.memFragPerDurability || 1;
+        
+        // Calculate the cost once for all attempts since they're all for the same level transition
+        // Use per-level cron settings if available, otherwise use the global settings
+        let currentUseCron = usePerLevelSettings && useCronPerLevel.length > 0 ? useCronPerLevel[0] : useCron;
+        let currentCronType = usePerLevelSettings && cronTypePerLevel.length > 0 ? cronTypePerLevel[0] : isUsingCostumeCron;
+        
+        const baseAttemptCost = await calculateAttemptCost(item, startLevel, currentUseCron, useMemFrags, currentCronType, useArtisan);
         
         for (let i = 0; i < attempts; i++) {
             // Calculate base success chance using the utility function
@@ -2418,6 +3113,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                 
                 // Reset failstack after successful attempt to simulate starting a new enhancement
                 currentFS = startingFS;
+                
+                // Move to the next enhancement level
+                currentEnhancementIndex++;
+                
+                // Update the cron settings for the next level if we're using per-level settings
+                if (usePerLevelSettings && currentEnhancementIndex < useCronPerLevel.length) {
+                    currentUseCron = useCronPerLevel[currentEnhancementIndex];
+                    currentCronType = cronTypePerLevel[currentEnhancementIndex];
+                }
             } else {
                 results.failures++;
                 results.attemptLog.push({
@@ -2431,7 +3135,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
                 
                 // Increase failstack automatically when cron stones are used
-                if (useCron) {
+                let useCronForThisAttempt = useCron;
+                if (usePerLevelSettings && currentEnhancementIndex < useCronPerLevel.length) {
+                    useCronForThisAttempt = useCronPerLevel[currentEnhancementIndex];
+                }
+                
+                if (useCronForThisAttempt) {
                     currentFS += 1;
                 }
             }

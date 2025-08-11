@@ -167,6 +167,68 @@ button:disabled {
     margin-left: 20px; /* Indent the costume cron option */
 }
 
+/* Per-level cron checkbox styles */
+.cron-level-container {
+    margin-top: 8px;
+    padding: 6px;
+    border-radius: 4px;
+    background-color: #252525;
+    border-left: 3px solid #4a5c72;
+}
+
+.per-level-cron-label {
+    font-weight: normal;
+    font-size: 0.95em;
+}
+
+/* Radio button styles for cron type selection */
+.cron-type-radio {
+    margin-left: 20px;
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    opacity: 0.5; /* Default to slightly faded appearance */
+    pointer-events: none; /* Disable interaction by default */
+    transition: opacity 0.2s;
+}
+
+.cron-type-radio.enabled {
+    opacity: 1; /* Full opacity when enabled */
+    pointer-events: all; /* Allow interaction when enabled */
+}
+
+.cron-type-radio input[type="radio"] {
+    width: auto;
+    margin-right: 5px;
+}
+
+/* Preonne specific cron styles */
+.preonne-cron-container {
+    margin-bottom: 20px;
+}
+
+.preonne-cron-container .cron-level-container {
+    margin: 8px 0;
+    padding: 8px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    background-color: rgba(74, 92, 114, 0.1);
+}
+
+.preonne-cron-container .cron-selector-btn {
+    font-size: 12px;
+    padding: 6px;
+    text-align: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.preonne-cron-container .cron-selector-btn:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.2);
+}
+
 .mem-frag-container {
     margin-top: 10px;
     border-top: 1px solid #333;
