@@ -1962,18 +1962,18 @@ document.addEventListener('DOMContentLoaded', async function() {
             materialsCostArray.push(materialsCost);
             
             memFragsCostArray.push(levelMemFragsCost);
-            memFragsCountArray.push(levelMemFragsCount);
+            memFragsCountArray.push(Math.round(levelMemFragsCount)); // Round for consistency with totals
             
             // Track the original memory fragment count (without Artisan's effect)
             // Always use the originalFragCount from costDetails, which is calculated correctly
             // regardless of whether Artisan's Memory is used
             // Only count failed attempts since successful attempts don't lose durability
             let levelOriginalMemFragsCount = costDetails.originalFragCount * (expectedAttempts - 1);
-            originalMemFragsCountArray.push(levelOriginalMemFragsCount);
+            originalMemFragsCountArray.push(Math.round(levelOriginalMemFragsCount)); // Round for consistency with totals
             
             totalMemFragsCost += levelMemFragsCost;
-            totalMemFragsCount += levelMemFragsCount;
-            totalOriginalMemFragsCount += levelOriginalMemFragsCount;
+            totalMemFragsCount += Math.round(levelMemFragsCount); // Round individual levels to avoid cumulative rounding errors
+            totalOriginalMemFragsCount += Math.round(levelOriginalMemFragsCount); // Round individual levels to avoid cumulative rounding errors
             
             // Track cron stone usage - now using per-level decision and the cost details from calculateAttemptCost
             if (useCronForThisLevel) {
@@ -2026,9 +2026,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             memFragsCost: memFragsCostArray,
             totalMemFragsCost: Math.round(totalMemFragsCost),
             memFragsCount: memFragsCountArray,
-            totalMemFragsCount: Math.round(totalMemFragsCount), // Round for display purposes
+            totalMemFragsCount: totalMemFragsCount, // Already rounded at individual level
             originalMemFragsCount: originalMemFragsCountArray,
-            totalOriginalMemFragsCount: Math.round(totalOriginalMemFragsCount), // Round for display purposes
+            totalOriginalMemFragsCount: totalOriginalMemFragsCount, // Already rounded at individual level
             cronCost: cronCostArray,
             cronStoneCount: cronStoneCountArray,
             totalCronCost: Math.round(totalCronCost),
