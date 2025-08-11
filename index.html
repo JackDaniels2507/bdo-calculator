@@ -203,6 +203,10 @@
                             <input type="radio" id="prayge-biceptimus" name="prayge" value="biceptimus">
                             <label for="prayge-biceptimus">Prayge to BiceptimusPrime</label>
                         </div>
+                        <div>
+                            <input type="radio" id="prayge-blue" name="prayge" value="blue">
+                            <label for="prayge-blue">Prayge to Blue (Pay2Win)</label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -226,6 +230,65 @@
             </div>
             <div class="modal-footer">
                 <button id="confirm-location-btn">Confirm Location</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal (for fun Pay2Win feature) -->
+    <div id="payment-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔥 BLUE'S ENHANCEMENT BLESSING 🔥</h2>
+                <span class="close" id="payment-modal-close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <p style="color: #ff6b6b; font-weight: bold; font-size: 18px;">
+                        💳 Enter your payment details to receive Blue's Enhancement Blessing! 💳
+                    </p>
+                    <p style="color: #ffd93d; font-size: 14px;">
+                        (This is just for fun - no real payment will be processed!)
+                    </p>
+                </div>
+
+                <div class="payment-form">
+                    <div class="form-group">
+                        <label for="card-number">Credit Card Number:</label>
+                        <input type="text" id="card-number" placeholder="1234 5678 9012 3456" maxlength="19">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="expiry-date">Expiry Date:</label>
+                            <input type="text" id="expiry-date" placeholder="MM/YY" maxlength="5">
+                        </div>
+                        <div class="form-group">
+                            <label for="cvc-code">CVC:</label>
+                            <input type="text" id="cvc-code" placeholder="123" maxlength="4">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cardholder-name">Cardholder Name:</label>
+                        <input type="text" id="cardholder-name" placeholder="John Doe">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="payment-amount" style="color: #4ecdc4; font-weight: bold;">Enhancement Blessing Amount ($USD):</label>
+                        <input type="number" id="payment-amount" placeholder="Enter amount (min $1)" min="1" max="9999">
+                        <div class="blessing-tiers" style="margin-top: 10px; font-size: 12px;">
+                            <div style="color: #ff4757;">💸 $1-$99: Blue is not impressed (You're broke!)</div>
+                            <div style="color: #ffa502;">💰 $100-$150: Blue shows mild approval (Getting there...)</div>
+                            <div style="color: #2ed573;">💎 $151-$200: Blue nods with respect (Balanced)</div>
+                            <div style="color: #3742fa;">🚀 $201-$400: Blue smiles upon you (Lucky!)</div>
+                            <div style="color: #a55eea;">👑 $401+: Blue bows before your generosity (WHALE STATUS!)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="process-payment-btn" disabled>💳 Process Payment</button>
+                <button id="cancel-payment-btn">Cancel</button>
             </div>
         </div>
     </div>

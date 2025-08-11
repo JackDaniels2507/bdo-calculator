@@ -2799,6 +2799,34 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // BiceptimusPrime gives -70% luck - multiply the success rate by 0.3
                 successChance = Math.max(successChance * 0.3, 0.1); // Minimum 0.1% chance
                 streamEffect = '-BiceptimusPrime';
+            } else if (praygeOption === 'blue') {
+                // Blue's Pay2Win enhancement blessing - modifier based on payment amount
+                const paymentAmount = window.bluePaymentAmount || 0;
+                let modifier = 1.0; // Default multiplier
+                
+                if (paymentAmount < 100) {
+                    // Less than $100: Very low success chance
+                    modifier = 0.1;
+                    streamEffect = '-Blue (Broke)';
+                } else if (paymentAmount >= 100 && paymentAmount <= 150) {
+                    // $100-$150: Reduced success chance
+                    modifier = 0.7;
+                    streamEffect = '-Blue (Poor)';
+                } else if (paymentAmount >= 151 && paymentAmount <= 200) {
+                    // $151-$200: Normal success chance
+                    modifier = 1.0;
+                    streamEffect = '=Blue (Balanced)';
+                } else if (paymentAmount >= 201 && paymentAmount <= 400) {
+                    // $201-$400: Enhanced success chance
+                    modifier = 1.3;
+                    streamEffect = '+Blue (Lucky)';
+                } else if (paymentAmount > 400) {
+                    // $401+: Greatly enhanced success chance
+                    modifier = 1.6;
+                    streamEffect = '+Blue (WHALE)';
+                }
+                
+                successChance = Math.min(Math.max(successChance * modifier, 0.01), 90);
             }
             
             // Use the pre-calculated cost (materials + cron stones, but NOT memory fragments)
@@ -2935,6 +2963,34 @@ document.addEventListener('DOMContentLoaded', async function() {
                 banner.style.color = "#fff";
                 banner.style.boxShadow = "0 0 10px #e74c3c";
                 banner.innerHTML = "💀 Cursed by BiceptimusPrime! 💔";
+            } else if (results.praygeOption === "blue") {
+                const paymentAmount = window.bluePaymentAmount || 0;
+                let bannerText = '';
+                let bannerColor = '';
+                let textColor = '#fff';
+                
+                if (paymentAmount < 100) {
+                    bannerColor = "#ff4757"; // Red
+                    bannerText = `💸 Blue says: "You're broke! ($${paymentAmount})" 💸`;
+                } else if (paymentAmount <= 150) {
+                    bannerColor = "#ffa502"; // Orange
+                    bannerText = `💰 Blue says: "Getting there... ($${paymentAmount})" 💰`;
+                } else if (paymentAmount <= 200) {
+                    bannerColor = "#2ed573"; // Green
+                    bannerText = `💎 Blue says: "Balanced payment! ($${paymentAmount})" 💎`;
+                } else if (paymentAmount <= 400) {
+                    bannerColor = "#3742fa"; // Blue
+                    bannerText = `🚀 Blue says: "Lucky spender! ($${paymentAmount})" 🚀`;
+                } else {
+                    bannerColor = "#a55eea"; // Purple
+                    textColor = "#fff";
+                    bannerText = `👑 Blue says: "WHALE DETECTED! ($${paymentAmount})" 👑`;
+                }
+                
+                banner.style.backgroundColor = bannerColor;
+                banner.style.color = textColor;
+                banner.style.boxShadow = `0 0 10px ${bannerColor}`;
+                banner.innerHTML = bannerText;
             }
             
             // Clear any existing banner
@@ -3077,12 +3133,44 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // Streamer effect cell
                 const effectCell = document.createElement('td');
                 if (log.streamEffect) {
-                    const isPositive = log.streamEffect.includes('+');
-                    effectCell.style.color = isPositive ? '#2ecc71' : '#e74c3c';
-                    effectCell.style.fontWeight = 'bold';
-                    
-                    // Just show the streamer name without any extra text
-                    effectCell.textContent = isPositive ? 'MrRapolas' : 'BiceptimusPrime';
+                    // Handle different streamer effects
+                    if (log.streamEffect.includes('MrRapolas')) {
+                        effectCell.style.color = '#2ecc71';
+                        effectCell.style.fontWeight = 'bold';
+                        effectCell.textContent = 'MrRapolas';
+                    } else if (log.streamEffect.includes('BiceptimusPrime')) {
+                        effectCell.style.color = '#e74c3c';
+                        effectCell.style.fontWeight = 'bold';
+                        effectCell.textContent = 'BiceptimusPrime';
+                    } else if (log.streamEffect.includes('Blue')) {
+                        // Handle Blue's different payment tiers
+                        effectCell.style.fontWeight = 'bold';
+                        if (log.streamEffect.includes('Broke')) {
+                            effectCell.style.color = '#ff4757';
+                            effectCell.textContent = 'Blue (Broke)';
+                        } else if (log.streamEffect.includes('Poor')) {
+                            effectCell.style.color = '#ffa502';
+                            effectCell.textContent = 'Blue (Poor)';
+                        } else if (log.streamEffect.includes('Balanced')) {
+                            effectCell.style.color = '#2ed573';
+                            effectCell.textContent = 'Blue (Balanced)';
+                        } else if (log.streamEffect.includes('Lucky')) {
+                            effectCell.style.color = '#3742fa';
+                            effectCell.textContent = 'Blue (Lucky)';
+                        } else if (log.streamEffect.includes('WHALE')) {
+                            effectCell.style.color = '#a55eea';
+                            effectCell.textContent = 'Blue (WHALE)';
+                        } else {
+                            effectCell.style.color = '#4ecdc4';
+                            effectCell.textContent = 'Blue';
+                        }
+                    } else {
+                        // Fallback for any other effects
+                        const isPositive = log.streamEffect.includes('+');
+                        effectCell.style.color = isPositive ? '#2ecc71' : '#e74c3c';
+                        effectCell.style.fontWeight = 'bold';
+                        effectCell.textContent = log.streamEffect;
+                    }
                 } else {
                     effectCell.textContent = '-';
                 }
@@ -3115,6 +3203,134 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         logContainer.appendChild(table);
         simResultsDiv.appendChild(logContainer);
+    }
+    
+    // Payment Modal Functions for Blue's Pay2Win Prayge
+    function showPaymentModal(onPaymentComplete) {
+        const modal = document.getElementById('payment-modal');
+        const closeBtn = document.getElementById('payment-modal-close');
+        const processBtn = document.getElementById('process-payment-btn');
+        const cancelBtn = document.getElementById('cancel-payment-btn');
+        const paymentAmount = document.getElementById('payment-amount');
+        const cardNumber = document.getElementById('card-number');
+        const expiryDate = document.getElementById('expiry-date');
+        const cvcCode = document.getElementById('cvc-code');
+        const cardholderName = document.getElementById('cardholder-name');
+        
+        // Reset form
+        paymentAmount.value = '';
+        cardNumber.value = '';
+        expiryDate.value = '';
+        cvcCode.value = '';
+        cardholderName.value = '';
+        processBtn.disabled = true;
+        
+        // Show modal
+        modal.style.display = 'block';
+        
+        // Add input formatting
+        cardNumber.addEventListener('input', function() {
+            let value = this.value.replace(/\s/g, '').replace(/[^0-9]/gi, '');
+            let formattedInputValue = value.match(/.{1,4}/g)?.join(' ') || value;
+            this.value = formattedInputValue;
+            validatePaymentForm();
+        });
+        
+        expiryDate.addEventListener('input', function() {
+            let value = this.value.replace(/\D/g, '');
+            if (value.length >= 2) {
+                value = value.substring(0, 2) + '/' + value.substring(2, 4);
+            }
+            this.value = value;
+            validatePaymentForm();
+        });
+        
+        cvcCode.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '');
+            validatePaymentForm();
+        });
+        
+        paymentAmount.addEventListener('input', validatePaymentForm);
+        cardholderName.addEventListener('input', validatePaymentForm);
+        
+        function validatePaymentForm() {
+            const isValid = 
+                paymentAmount.value && parseFloat(paymentAmount.value) >= 1 &&
+                cardNumber.value.replace(/\s/g, '').length >= 13 &&
+                expiryDate.value.length === 5 &&
+                cvcCode.value.length >= 3 &&
+                cardholderName.value.trim().length > 0;
+            
+            processBtn.disabled = !isValid;
+        }
+        
+        // Process payment button
+        processBtn.onclick = function() {
+            const amount = parseFloat(paymentAmount.value);
+            window.bluePaymentAmount = amount; // Store globally for enhancement calculation
+            
+            // Show fake processing animation
+            processBtn.textContent = '💳 Processing...';
+            processBtn.disabled = true;
+            
+            setTimeout(() => {
+                modal.style.display = 'none';
+                
+                // Show success message
+                let tierMessage = '';
+                if (amount < 100) {
+                    tierMessage = 'You\'re broke! Blue is not impressed! 💸';
+                } else if (amount <= 150) {
+                    tierMessage = 'Getting there... Blue shows mild approval! 💰';
+                } else if (amount <= 200) {
+                    tierMessage = 'Balanced! Blue nods with respect! 💎';
+                } else if (amount <= 400) {
+                    tierMessage = 'Lucky! Blue smiles upon you! 🚀';
+                } else {
+                    tierMessage = 'WHALE STATUS! Blue bows before your generosity! 👑';
+                }
+                
+                alert(`💳 Payment of $${amount} processed successfully!\n\n${tierMessage}\n\n(This is just for fun - no real payment was processed!)`);
+                
+                // Reset button
+                processBtn.textContent = '💳 Process Payment';
+                
+                // Run simulation
+                onPaymentComplete();
+            }, 2000);
+        };
+        
+        // Close button and cancel button
+        closeBtn.onclick = function() {
+            modal.style.display = 'none';
+        };
+        
+        cancelBtn.onclick = function() {
+            modal.style.display = 'none';
+        };
+        
+        // Close when clicking outside
+        window.onclick = function(event) {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
+    }
+    
+    // Helper function to run simulation after payment
+    async function runSimulationAfterPayment(item, startLevel, targetLevel, startingFS, attempts, useCron, useMemFrags, praygeOption, isUsingCostumeCron, useArtisan) {
+        try {
+            // Show a loading message
+            simResultsDiv.innerHTML = '<p>Running enhanced simulation with Blue\'s blessing...</p>';
+            simResultsDiv.className = 'results-container show';
+            
+            const simulationResults = await runSimulation(item, startLevel, targetLevel, startingFS, attempts, useCron, useMemFrags, praygeOption, isUsingCostumeCron, useArtisan);
+            displaySimulationResults(simulationResults);
+        } catch (error) {
+            console.error('Error in simulation:', error);
+            simResultsDiv.innerHTML = `<div class="error">Error running simulation: ${error.message}</div>`;
+            simResultsDiv.className = 'results-container show';
+        }
     }
     
     // Event listener for simulate button
@@ -3155,6 +3371,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                         praygeOption = praygeOptions[i].value;
                         break;
                     }
+                }
+                
+                // If Blue prayge is selected, show payment modal first
+                if (praygeOption === 'blue') {
+                    showPaymentModal(() => {
+                        // Run simulation after payment is "processed"
+                        runSimulationAfterPayment(item, startLevel, targetLevel, startingFS, attempts, useCron, useMemFrags, praygeOption, isUsingCostumeCron, useArtisan);
+                    });
+                    return; // Exit early to wait for payment modal
                 }
                 
                 // Use the isUsingCostumeCron variable we defined earlier

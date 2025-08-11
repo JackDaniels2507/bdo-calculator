@@ -488,3 +488,111 @@ button:disabled {
     background-color: #3a3a3a;
     border-color: var(--accent-color);
 }
+
+/* Payment Modal Styles */
+.payment-form {
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.form-row {
+    display: flex;
+    gap: 15px;
+}
+
+.form-row .form-group {
+    flex: 1;
+}
+
+#payment-modal .modal-content {
+    max-width: 500px;
+    background: linear-gradient(135deg, #1e1e1e 0%, #2a2a2a 100%);
+    border: 2px solid #4ecdc4;
+    box-shadow: 0 0 30px rgba(78, 205, 196, 0.3);
+}
+
+#payment-modal .modal-header h2 {
+    color: #4ecdc4;
+    text-align: center;
+    margin: 0;
+    text-shadow: 0 0 10px rgba(78, 205, 196, 0.5);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.payment-form input {
+    background-color: #333;
+    border: 1px solid #555;
+    color: #e0e0e0;
+    padding: 10px;
+    border-radius: 5px;
+    transition: border-color 0.3s ease;
+}
+
+.payment-form input:focus {
+    border-color: #4ecdc4;
+    outline: none;
+    box-shadow: 0 0 5px rgba(78, 205, 196, 0.3);
+}
+
+.blessing-tiers {
+    background-color: #1a1a1a;
+    border-radius: 5px;
+    padding: 10px;
+    border-left: 4px solid #4ecdc4;
+}
+
+.blessing-tiers div {
+    margin: 5px 0;
+    font-weight: bold;
+}
+
+#process-payment-btn {
+    background: linear-gradient(45deg, #4ecdc4, #44a08d);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 16px;
+}
+
+#process-payment-btn:hover:not(:disabled) {
+    background: linear-gradient(45deg, #44a08d, #4ecdc4);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(78, 205, 196, 0.4);
+}
+
+#process-payment-btn:disabled {
+    background: #555;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+#cancel-payment-btn {
+    background-color: #666;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#cancel-payment-btn:hover {
+    background-color: #777;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
