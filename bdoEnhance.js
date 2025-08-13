@@ -156,9 +156,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     /**
      * Calculates the optimal cost to build a specific failstack level
      * @param {number} targetFS - The target failstack level to build
+     * @param {number} freeFailstacks - Number of free permanent failstacks available (default: 3)
+     * @param {number} maxPaidFailstacks - Maximum number of paid permanent failstacks (default: 13)
      * @returns {Promise<Object>} - Object containing cost breakdown and details
      */
-    async function calculateFailstackBuildCost(targetFS) {
+    async function calculateFailstackBuildCost(targetFS, freeFailstacks = 3, maxPaidFailstacks = 13) {
         let totalCost = 0;
         let breakdown = {
             freeFailstacks: 0,
@@ -173,15 +175,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             remainingFS: targetFS
         };
 
-        // Step 1: Use free permanent failstacks (first 3 are free)
+        // Step 1: Use free permanent failstacks
         if (breakdown.remainingFS > 0) {
-            breakdown.freeFailstacks = Math.min(breakdown.remainingFS, permanentFailstacks.freeFailstacks);
+            breakdown.freeFailstacks = Math.min(breakdown.remainingFS, freeFailstacks);
             breakdown.remainingFS -= breakdown.freeFailstacks;
         }
 
-        // Step 2: Use paid permanent failstacks (up to 13 at 6,555,891 each)
+        // Step 2: Use paid permanent failstacks (Valks' Cry at 6,555,891 each)
         if (breakdown.remainingFS > 0) {
-            breakdown.paidFailstacks = Math.min(breakdown.remainingFS, permanentFailstacks.maxPaidFailstacks);
+            breakdown.paidFailstacks = Math.min(breakdown.remainingFS, maxPaidFailstacks);
             breakdown.paidFailstackCost = breakdown.paidFailstacks * permanentFailstacks.paidFailstackCost;
             totalCost += breakdown.paidFailstackCost;
             breakdown.remainingFS -= breakdown.paidFailstacks;
@@ -222,6 +224,54 @@ document.addEventListener('DOMContentLoaded', async function() {
             totalCost,
             breakdown
         };
+    }
+
+    /**
+     * Helper function to get permanent failstack configuration values from calculator tab
+     * @returns {Object} - Object containing freeFailstacks and maxPaidFailstacks values
+     */
+    function getPermanentFailstackConfig() {
+        let freeFailstacks = 3; // Default value
+        let maxPaidFailstacks = 13; // Default value
+        
+        // Only use custom values if the checkbox is checked and inputs exist
+        if (includeFailstackCostCheckbox && includeFailstackCostCheckbox.checked) {
+            if (freeFailstacksInput && freeFailstacksInput.value !== '') {
+                freeFailstacks = Math.max(0, parseInt(freeFailstacksInput.value) || 3);
+            }
+            if (maxValksInput && maxValksInput.value !== '') {
+                maxPaidFailstacks = Math.max(0, parseInt(maxValksInput.value) || 13);
+            }
+            console.log(`Calculator: Using custom permanent failstack config - Free: ${freeFailstacks}, Valk's Cry: ${maxPaidFailstacks}`);
+        } else {
+            console.log(`Calculator: Using default permanent failstack config - Free: ${freeFailstacks}, Valk's Cry: ${maxPaidFailstacks}`);
+        }
+        
+        return { freeFailstacks, maxPaidFailstacks };
+    }
+
+    /**
+     * Helper function to get permanent failstack configuration values from simulation tab
+     * @returns {Object} - Object containing freeFailstacks and maxPaidFailstacks values
+     */
+    function getSimPermanentFailstackConfig() {
+        let freeFailstacks = 3; // Default value
+        let maxPaidFailstacks = 13; // Default value
+        
+        // Only use custom values if the checkbox is checked and inputs exist
+        if (simIncludeFailstackCost && simIncludeFailstackCost.checked) {
+            if (simFreeFailstacksInput && simFreeFailstacksInput.value !== '') {
+                freeFailstacks = Math.max(0, parseInt(simFreeFailstacksInput.value) || 3);
+            }
+            if (simMaxValksInput && simMaxValksInput.value !== '') {
+                maxPaidFailstacks = Math.max(0, parseInt(simMaxValksInput.value) || 13);
+            }
+            console.log(`Simulation: Using custom permanent failstack config - Free: ${freeFailstacks}, Valk's Cry: ${maxPaidFailstacks}`);
+        } else {
+            console.log(`Simulation: Using default permanent failstack config - Free: ${freeFailstacks}, Valk's Cry: ${maxPaidFailstacks}`);
+        }
+        
+        return { freeFailstacks, maxPaidFailstacks };
     }
 
     /**
@@ -493,6 +543,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     const useArtisanMemoryCheckbox = document.getElementById('use-artisan-memory');
     const includeFailstackCostCheckbox = document.getElementById('include-failstack-cost');
     
+    // Permanent failstack configuration elements
+    const permanentFailstackConfig = document.getElementById('permanent-failstack-config');
+    const freeFailstacksInput = document.getElementById('free-permanent-fs');
+    const maxValksInput = document.getElementById('max-valks-cry');
+    
     // Get simulation tab elements
     const simItemSelect = document.getElementById('sim-item-select');
     const simTargetLevel = document.getElementById('sim-target-level');
@@ -506,6 +561,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     const simUseMemFrags = document.getElementById('sim-use-mem-frags');
     const simUseArtisanMemory = document.getElementById('sim-use-artisan-memory');
     const simIncludeFailstackCost = document.getElementById('sim-include-failstack-cost');
+    
+    // Simulation permanent failstack configuration elements
+    const simPermanentFailstackConfig = document.getElementById('sim-permanent-failstack-config');
+    const simFreeFailstacksInput = document.getElementById('sim-free-permanent-fs');
+    const simMaxValksInput = document.getElementById('sim-max-valks-cry');
     
     // Get tab navigation elements
     const tabs = document.querySelectorAll('.tab');
@@ -591,6 +651,27 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
+    // Add event listeners for failstack cost configuration
+    if (includeFailstackCostCheckbox && permanentFailstackConfig) {
+        includeFailstackCostCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                permanentFailstackConfig.style.display = 'block';
+            } else {
+                permanentFailstackConfig.style.display = 'none';
+            }
+        });
+    }
+    
+    if (simIncludeFailstackCost && simPermanentFailstackConfig) {
+        simIncludeFailstackCost.addEventListener('change', function() {
+            if (this.checked) {
+                simPermanentFailstackConfig.style.display = 'block';
+            } else {
+                simPermanentFailstackConfig.style.display = 'none';
+            }
+        });
+    }
+    
     // Log which elements were found or not found for debugging
     console.log('DOM elements found:', {
         calculator: {
@@ -600,7 +681,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             failstackContainer: !!failstackContainer,
             calculateBtn: !!calculateBtn,
             resultsDiv: !!resultsDiv,
-            useCronCheckbox: !!useCronCheckbox
+            useCronCheckbox: !!useCronCheckbox,
+            includeFailstackCostCheckbox: !!includeFailstackCostCheckbox,
+            permanentFailstackConfig: !!permanentFailstackConfig,
+            freeFailstacksInput: !!freeFailstacksInput,
+            maxValksInput: !!maxValksInput
         },
         simulator: {
             simItemSelect: !!simItemSelect,
@@ -609,7 +694,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             simAttempts: !!simAttempts,
             simUseCron: !!simUseCron,
             simulateBtn: !!simulateBtn,
-            simResultsDiv: !!simResultsDiv
+            simResultsDiv: !!simResultsDiv,
+            simIncludeFailstackCost: !!simIncludeFailstackCost,
+            simPermanentFailstackConfig: !!simPermanentFailstackConfig,
+            simFreeFailstacksInput: !!simFreeFailstacksInput,
+            simMaxValksInput: !!simMaxValksInput
         },
         tabs: tabs.length,
         tabContents: tabContents.length,
@@ -2299,7 +2388,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                         
                         // Track failstack costs for recovery attempts if enabled
                         if (includeFailstackCosts && prevFS > 0) {
-                            const recoveryFailstackCostData = await calculateFailstackBuildCost(prevFS);
+                            const { freeFailstacks, maxPaidFailstacks } = getPermanentFailstackConfig();
+                            const recoveryFailstackCostData = await calculateFailstackBuildCost(prevFS, freeFailstacks, maxPaidFailstacks);
                             const recoveryFailstackCost = recoveryFailstackCostData.totalCost * levelExpectedAttempts * currentRecoveryMultiplier;
                             
                             // Add to recovery failstack cost for this level
@@ -2489,11 +2579,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (includeFailstackCosts) {
             // Calculate the cost for each individual failstack level used
             // This represents the actual cost since you need to build failstacks for each enhancement level
+            const { freeFailstacks, maxPaidFailstacks } = getPermanentFailstackConfig();
+            
             for (let i = 0; i < failstacks.length; i++) {
                 const fs = failstacks[i];
                 
                 if (fs > 0) {
-                    const failstackCostData = await calculateFailstackBuildCost(fs);
+                    const failstackCostData = await calculateFailstackBuildCost(fs, freeFailstacks, maxPaidFailstacks);
                     failstackCostPerLevel.push(failstackCostData.totalCost);
                     failstackCostBreakdownPerLevel.push(failstackCostData.breakdown);
                     totalFailstackCost += failstackCostData.totalCost; // Sum all individual costs
@@ -2506,7 +2598,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             // For the overall breakdown display, use the maximum failstack data
             const maxFailstack = Math.max(...failstacks);
             if (maxFailstack > 0) {
-                const maxFailstackCostData = await calculateFailstackBuildCost(maxFailstack);
+                const maxFailstackCostData = await calculateFailstackBuildCost(maxFailstack, freeFailstacks, maxPaidFailstacks);
                 failstackCostBreakdown = maxFailstackCostData.breakdown;
             }
             
@@ -3401,7 +3493,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Calculate failstack cost per attempt if enabled (before the simulation loop)
         let failstackCostPerAttempt = 0;
         if (includeFailstackCosts && startingFS > 0) {
-            const failstackCostData = await calculateFailstackBuildCost(startingFS);
+            const { freeFailstacks, maxPaidFailstacks } = getSimPermanentFailstackConfig();
+            const failstackCostData = await calculateFailstackBuildCost(startingFS, freeFailstacks, maxPaidFailstacks);
             results.failstackCost = failstackCostData.totalCost;
             results.totalCost += results.failstackCost;
             
