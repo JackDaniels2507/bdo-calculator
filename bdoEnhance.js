@@ -53,6 +53,42 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Failstack building costs - defines what items and quantities are needed for specific failstack levels
     const failstackCosts = {
+        5:{
+            itemId: 16001,
+            quantity: 5
+        },
+        10:{
+            itemId: 16001,
+            quantity: 10
+        },
+        15:{
+            itemId: 16001,
+            quantity: 21
+        },
+        20:{
+            itemId: 16001,
+            quantity: 33
+        },
+        25:{
+            itemId: 16001,
+            quantity: 53
+        },
+        30:{
+            itemId: 16001,
+            quantity: 84
+        },
+        35:{
+            itemId: 16001,
+            quantity: 136
+        },
+        40:{
+            itemId: 16001,
+            quantity: 230
+        },
+        45:{
+            itemId: 16001,
+            quantity: 406
+        },
         50: {
             itemId: 8411, 
             quantity: 4
@@ -128,6 +164,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             freeFailstacks: 0,
             paidFailstacks: 0,
             paidFailstackCost: 0,
+            blackStoneCost: 0,
+            blackStoneCount: 0,
             crystallizedDespairCost: 0,
             crystallizedDespairCount: 0,
             originOfDarkHungerCost: 0,
@@ -149,21 +187,25 @@ document.addEventListener('DOMContentLoaded', async function() {
             breakdown.remainingFS -= breakdown.paidFailstacks;
         }
 
-        // Step 3: Build remaining failstacks using items
+        // Step 3: Build remaining failstacks using items from failstackCosts
         if (breakdown.remainingFS > 0) {
             if (breakdown.remainingFS <= 100) {
-                // Use Crystallized Despair for FS up to 100
-                const costData = await calculateCrystallizedDespairCost(breakdown.remainingFS);
-                breakdown.crystallizedDespairCost = costData.totalCost;
-                breakdown.crystallizedDespairCount = costData.totalCount;
-                totalCost += breakdown.crystallizedDespairCost;
+                // Calculate cost for building remaining failstacks using appropriate items
+                const costData = await calculateFailstackItemCost(breakdown.remainingFS);
+                breakdown.crystallizedDespairCost = costData.crystallizedDespairCost;
+                breakdown.crystallizedDespairCount = costData.crystallizedDespairCount;
+                breakdown.blackStoneCost = costData.blackStoneCost || 0;
+                breakdown.blackStoneCount = costData.blackStoneCount || 0;
+                totalCost += costData.totalCost;
                 breakdown.remainingFS = 0;
             } else {
-                // First build to 100 with Crystallized Despair
-                const despairCostData = await calculateCrystallizedDespairCost(100);
-                breakdown.crystallizedDespairCost = despairCostData.totalCost;
-                breakdown.crystallizedDespairCount = despairCostData.totalCount;
-                totalCost += breakdown.crystallizedDespairCost;
+                // First build to 100 using appropriate items
+                const itemCostData = await calculateFailstackItemCost(100);
+                breakdown.crystallizedDespairCost = itemCostData.crystallizedDespairCost;
+                breakdown.crystallizedDespairCount = itemCostData.crystallizedDespairCount;
+                breakdown.blackStoneCost = itemCostData.blackStoneCost || 0;
+                breakdown.blackStoneCount = itemCostData.blackStoneCount || 0;
+                totalCost += itemCostData.totalCost;
                 
                 // Then use Origin of Dark Hunger for remaining FS above 100
                 const remainingAbove100 = breakdown.remainingFS - 100;
@@ -192,24 +234,25 @@ document.addEventListener('DOMContentLoaded', async function() {
         let totalCost = 0;
         let totalCount = 0;
 
-        // If targetFS is very low (below our minimum defined level), use a flat rate
+        // Get all defined levels and find the ones that use Crystallized Despair (itemId: 8411)
         const definedLevels = Object.keys(failstackCosts).map(Number).sort((a, b) => a - b);
-        const minDefinedLevel = definedLevels[0] || 50; // Default to 50 if no levels defined
+        const crystallizedDespairLevels = definedLevels.filter(level => failstackCosts[level].itemId === 8411);
+        const minCrystallizedLevel = crystallizedDespairLevels[0] || 50; // Default to 50 if no Crystallized Despair levels defined
         
-        if (targetFS < minDefinedLevel) {
-            // For low failstack levels, use a constant rate of approximately 46M silver as suggested
-            const lowFSConstantCost = 46000000; // 46 million silver
+        // If targetFS is below the minimum Crystallized Despair level, return 0 cost
+        // (these levels should be handled by other items in failstackCosts)
+        if (targetFS < minCrystallizedLevel) {
             return {
-                totalCost: lowFSConstantCost,
-                totalCount: Math.ceil(lowFSConstantCost / despairPrice) // Estimate count based on price
+                totalCost: 0,
+                totalCount: 0
             };
         }
         
         let currentFS = 0;
         
-        // Find the exact match or the highest level <= targetFS
+        // Find the exact match or the highest Crystallized Despair level <= targetFS
         let exactLevel = null;
-        for (const level of definedLevels) {
+        for (const level of crystallizedDespairLevels) {
             if (level <= targetFS) {
                 exactLevel = level;
             } else {
@@ -229,8 +272,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (currentFS < targetFS && currentFS < 100) {
             const remainingFS = targetFS - currentFS;
             
-            // Find the next level to calculate cost per FS
-            const nextLevel = definedLevels.find(level => level > currentFS);
+            // Find the next Crystallized Despair level to calculate cost per FS
+            const nextLevel = crystallizedDespairLevels.find(level => level > currentFS);
             if (nextLevel) {
                 const currentLevelCost = failstackCosts[currentFS];
                 const nextLevelCost = failstackCosts[nextLevel];
@@ -249,6 +292,160 @@ document.addEventListener('DOMContentLoaded', async function() {
         return {
             totalCost,
             totalCount
+        };
+    }
+
+    /**
+     * Calculates cost for building failstacks using the appropriate items from failstackCosts
+     * @param {number} targetFS - Target failstack level (max 100)
+     * @returns {Promise<Object>} - Cost and count data for all items used
+     */
+    async function calculateFailstackItemCost(targetFS) {
+        let totalCost = 0;
+        let crystallizedDespairCost = 0;
+        let crystallizedDespairCount = 0;
+        let blackStoneCost = 0;
+        let blackStoneCount = 0;
+
+        // Get all defined levels and separate by item type
+        const definedLevels = Object.keys(failstackCosts).map(Number).sort((a, b) => a - b);
+        const blackStoneLevels = definedLevels.filter(level => failstackCosts[level].itemId === 16001);
+        const crystallizedDespairLevels = definedLevels.filter(level => failstackCosts[level].itemId === 8411);
+        
+        // Get prices for both items
+        const blackStonePrice = await fetchItemPrice(currentRegion, 16001); // Black Stone
+        const despairPrice = await fetchItemPrice(currentRegion, 8411); // Crystallized Despair
+
+        // Determine the most efficient method based on target failstack level
+        const maxBlackStoneLevel = Math.max(...blackStoneLevels);
+        const minCrystallizedLevel = Math.min(...crystallizedDespairLevels);
+
+        // For failstacks that can be built with Crystallized Despair, compare costs and use the more efficient method
+        if (targetFS >= minCrystallizedLevel) {
+            // Calculate cost using only Crystallized Despair (more efficient for higher FS)
+            let lowerLevel = null;
+            let upperLevel = null;
+            
+            // Find the appropriate range for interpolation in Crystallized Despair levels
+            for (const level of crystallizedDespairLevels) {
+                if (level <= targetFS) {
+                    lowerLevel = level;
+                } else {
+                    upperLevel = level;
+                    break;
+                }
+            }
+            
+            if (lowerLevel === targetFS) {
+                // Exact match
+                const crystallizedData = failstackCosts[lowerLevel];
+                crystallizedDespairCount = crystallizedData.quantity;
+                crystallizedDespairCost = crystallizedDespairCount * despairPrice;
+            } else if (lowerLevel !== null && upperLevel !== null && lowerLevel < targetFS && targetFS < upperLevel) {
+                // Interpolate between lowerLevel and upperLevel
+                const lowerData = failstackCosts[lowerLevel];
+                const upperData = failstackCosts[upperLevel];
+                const fsGap = upperLevel - lowerLevel;
+                const costGap = upperData.quantity - lowerData.quantity;
+                const costPerFS = costGap / fsGap;
+                const additionalFS = targetFS - lowerLevel;
+                
+                crystallizedDespairCount = Math.ceil(lowerData.quantity + (additionalFS * costPerFS));
+                crystallizedDespairCost = crystallizedDespairCount * despairPrice;
+            } else if (lowerLevel !== null && upperLevel === null) {
+                // targetFS is above the highest defined level, use the highest level cost
+                const crystallizedData = failstackCosts[lowerLevel];
+                crystallizedDespairCount = crystallizedData.quantity;
+                crystallizedDespairCost = crystallizedDespairCount * despairPrice;
+            }
+            
+            totalCost = crystallizedDespairCost;
+        } else if (targetFS > 0 && targetFS <= maxBlackStoneLevel) {
+            // Use Black Stone for lower failstack levels (more efficient for lower FS)
+            let lowerLevel = null;
+            let upperLevel = null;
+            
+            // Find the appropriate range for interpolation in Black Stone levels
+            for (const level of blackStoneLevels) {
+                if (level <= targetFS) {
+                    lowerLevel = level;
+                } else {
+                    upperLevel = level;
+                    break;
+                }
+            }
+            
+            if (lowerLevel === targetFS) {
+                // Exact match
+                const blackStoneData = failstackCosts[lowerLevel];
+                blackStoneCount = blackStoneData.quantity;
+                blackStoneCost = blackStoneCount * blackStonePrice;
+            } else if (lowerLevel !== null && upperLevel !== null && lowerLevel < targetFS && targetFS < upperLevel) {
+                // Interpolate between lowerLevel and upperLevel
+                const lowerData = failstackCosts[lowerLevel];
+                const upperData = failstackCosts[upperLevel];
+                const fsGap = upperLevel - lowerLevel;
+                const costGap = upperData.quantity - lowerData.quantity;
+                const costPerFS = costGap / fsGap;
+                const additionalFS = targetFS - lowerLevel;
+                
+                blackStoneCount = Math.ceil(lowerData.quantity + (additionalFS * costPerFS));
+                blackStoneCost = blackStoneCount * blackStonePrice;
+            } else if (lowerLevel === null && upperLevel !== null) {
+                // targetFS is below our minimum defined level, interpolate from 0 to first level
+                const firstLevel = blackStoneLevels[0];
+                const firstData = failstackCosts[firstLevel];
+                const costPerFS = firstData.quantity / firstLevel;
+                
+                blackStoneCount = Math.ceil(targetFS * costPerFS);
+                blackStoneCost = blackStoneCount * blackStonePrice;
+            }
+            
+            totalCost = blackStoneCost;
+        } else {
+            // For failstack levels between Black Stone max and Crystallized Despair min (46-49)
+            // Use a stepped approach: base Black Stone cost + incremental Crystallized Despair
+            if (blackStoneLevels.length > 0 && crystallizedDespairLevels.length > 0) {
+                const lastBlackStoneLevel = maxBlackStoneLevel; // 45
+                const lastBlackStoneData = failstackCosts[lastBlackStoneLevel];
+                
+                // Always use the full Black Stone cost as base (406 Black Stones for 45 FS)
+                blackStoneCount = lastBlackStoneData.quantity;
+                blackStoneCost = blackStoneCount * blackStonePrice;
+                
+                // Add incremental Crystallized Despair based on how far above 45 FS we are
+                const additionalFS = targetFS - lastBlackStoneLevel;
+                
+                if (additionalFS >= 1 && additionalFS <= 2) {
+                    // FS 46-47: 406 Black Stones + 1 Crystallized Despair
+                    crystallizedDespairCount = 1;
+                } else if (additionalFS >= 3 && additionalFS <= 4) {
+                    // FS 48-49: 406 Black Stones + 2 Crystallized Despair
+                    crystallizedDespairCount = 2;
+                }
+                
+                crystallizedDespairCost = crystallizedDespairCount * despairPrice;
+                totalCost = blackStoneCost + crystallizedDespairCost;
+            } else {
+                // Fallback: use Crystallized Despair method if available
+                if (crystallizedDespairLevels.length > 0) {
+                    const firstCrystallizedLevel = minCrystallizedLevel;
+                    const firstCrystallizedData = failstackCosts[firstCrystallizedLevel];
+                    const costPerFS = (firstCrystallizedData.quantity * despairPrice) / firstCrystallizedLevel;
+                    
+                    crystallizedDespairCount = Math.ceil(targetFS * costPerFS / despairPrice);
+                    crystallizedDespairCost = crystallizedDespairCount * despairPrice;
+                    totalCost = crystallizedDespairCost;
+                }
+            }
+        }
+
+        return {
+            totalCost,
+            crystallizedDespairCost,
+            crystallizedDespairCount,
+            blackStoneCost,
+            blackStoneCount
         };
     }
 
@@ -777,7 +974,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         4987: "Concentrated Magical Black Gem",
         752023: "Mass of Pure Magic",
         8411: "Crystallized Despair",
-        5998: "Origin of Dark Hunger"
+        5998: "Origin of Dark Hunger",
+        16001: "Black Stone"
     };
     
     // Cache control to reduce network requests
@@ -809,7 +1007,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Crystallized Despair
             8411: 36000000,  // 36 million silver based on estimated value
             // Origin of Dark Hunger
-            5998: 1000000000  // 1000 million silver based on estimated value (special failstack item)
+            5998: 1000000000,  // 1000 million silver based on estimated value (special failstack item)
+            // Black Stone
+            16001: 120000 
+        
         },
         'NA': {
             // Essence of Dawn with a small price variation for NA
@@ -831,7 +1032,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Crystallized Despair
             8411: 36000000,  // 36 million silver based on estimated value
             // Origin of Dark Hunger
-            5998: 1000000000  // 1000 million silver based on estimated value (special failstack item)
+            5998: 1000000000,  // 1000 million silver based on estimated value (special failstack item)
+            // Black Stone
+            16001: 120000 
         }
     };
     
@@ -2455,8 +2658,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             const directFailstackCost = results.totalFailstackCost - (results.totalRecoveryFailstackCost || 0);
             
             if (results.totalRecoveryFailstackCost && results.totalRecoveryFailstackCost > 0) {
-                costBreakdown.innerHTML += `<br>• <strong>Failstack Building Cost:</strong> ${Math.round(results.totalFailstackCost).toLocaleString()} Silver`;
-                costBreakdown.innerHTML += `<br><span style="margin-left: 15px; font-size: 0.9em; color: #e67e22;">Direct: ${Math.round(directFailstackCost).toLocaleString()} Silver, Recovery: ${Math.round(results.totalRecoveryFailstackCost).toLocaleString()} Silver</span>`;
+                costBreakdown.innerHTML += `<br>• <strong>Failstack Building Cost:</strong> ${Math.round(directFailstackCost).toLocaleString()} Silver`;
+                costBreakdown.innerHTML += `<br>• <strong>Recovery Failstack Building Cost:</strong> ${Math.round(results.totalRecoveryFailstackCost).toLocaleString()} Silver`;
             } else {
                 costBreakdown.innerHTML += `<br>• <strong>Failstack Building Cost:</strong> ${Math.round(results.totalFailstackCost).toLocaleString()} Silver`;
             }
@@ -2643,13 +2846,18 @@ document.addEventListener('DOMContentLoaded', async function() {
                         detailText += `${breakdown.paidFailstacks} paid permanent FS (${Math.round(breakdown.paidFailstackCost).toLocaleString()} Silver)`;
                     }
                     
-                    if (breakdown.crystallizedDespairCount > 0) {
+                    if (breakdown.blackStoneCount > 0) {
                         if (breakdown.freeFailstacks > 0 || breakdown.paidFailstacks > 0) detailText += ', ';
+                        detailText += `${breakdown.blackStoneCount} Black Stone (${Math.round(breakdown.blackStoneCost).toLocaleString()} Silver)`;
+                    }
+                    
+                    if (breakdown.crystallizedDespairCount > 0) {
+                        if (breakdown.freeFailstacks > 0 || breakdown.paidFailstacks > 0 || breakdown.blackStoneCount > 0) detailText += ', ';
                         detailText += `${breakdown.crystallizedDespairCount} Crystallized Despair (${Math.round(breakdown.crystallizedDespairCost).toLocaleString()} Silver)`;
                     }
                     
                     if (breakdown.originOfDarkHungerCount > 0) {
-                        if (breakdown.freeFailstacks > 0 || breakdown.paidFailstacks > 0 || breakdown.crystallizedDespairCount > 0) detailText += ', ';
+                        if (breakdown.freeFailstacks > 0 || breakdown.paidFailstacks > 0 || breakdown.blackStoneCount > 0 || breakdown.crystallizedDespairCount > 0) detailText += ', ';
                         detailText += `${breakdown.originOfDarkHungerCount} Origin of Dark Hunger (${Math.round(breakdown.originOfDarkHungerCost).toLocaleString()} Silver)`;
                     }
                     
@@ -2666,8 +2874,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             // Add recovery failstack cost if this level has recovery failstack costs (moved to bottom)
             if (results.includeFailstackCosts && results.recoveryFailstackCost && results.recoveryFailstackCost[i] > 0) {
-                detailContent += `<br><span style="margin-left: 15px; color: #e67e22;">• Recovery Failstack Building Cost: ${Math.round(results.recoveryFailstackCost[i]).toLocaleString()} Silver</span>`;
-                detailContent += `<br><span style="margin-left: 30px; font-size: 0.85em; color: #e67e22;">Cost to rebuild failstacks for recovery attempts</span>`;
+                detailContent += `<br><span style="margin-left: 15px; color: #e74c3c;">• Recovery Failstack Building Cost: ${Math.round(results.recoveryFailstackCost[i]).toLocaleString()} Silver</span>`;
+                detailContent += `<br><span style="margin-left: 30px; font-size: 0.85em; color: #e74c3c;">Cost to rebuild failstacks for recovery attempts</span>`;
             }
                                 
             // Add note about downgrades if not using cron and not enhancing from BASE level
@@ -2700,15 +2908,22 @@ document.addEventListener('DOMContentLoaded', async function() {
             let cronType = "Cron Stones";
             note.innerHTML = `<strong>Note:</strong> These calculations include ${cronType} costs. Cron Stones prevent item downgrades but durability is still lost.<br>` +
                            '<strong>Failstack Increments:</strong> When using cron stones, the calculator simulates automatic failstack increments that would naturally occur from failed attempts.<br>' +
-                           '<span style="color: #ff0000; font-weight: bold; font-size: 1.1em;">Important: The cost of building failstacks is not included in these calculations.</span>';
+                           '<strong>• Direct Attempts:</strong> The expected number of attempts needed at each level (calculated using precise mathematical formulas).<br>' +
+                           '<strong>• Recovery Attempts:</strong> Additional attempts needed to recover from downgrades after failures (with conservative cost modeling).<br>' +
+                           '<strong>• Failstack Building Costs:</strong> Includes the cost of building required failstacks using Black Stones, Crystallized Despair, and Origin of Dark Hunger.<br>' +
+                           '<strong>• Memory Fragment Costs:</strong> Durability repair costs with optional Artisan\'s Memory efficiency (when enabled).<br>' +
+                           '<strong>• Total Per Level:</strong> Combined direct enhancement, recovery, and failstack building costs for each level.<br>' +
+                           '<strong>• Overall Total:</strong> Comprehensive cost including all materials, failstacks, memory fragments, and recovery attempts across all levels.<br>' +
+                           '<span style="color: #ff0000; font-weight: bold; font-size: 1.1em;">Important: Failstack building costs are included up to 316 FS. Higher failstacks may require additional cost calculations.</span>';
         } else {
-            note.innerHTML = '<strong>Note:</strong> These calculations include the cost of potential downgrades on failed attempts without Cron stones.<br>' +
-                           '<strong>• Direct Attempts:</strong> The expected number of attempts needed at each level (100/success chance).<br>' +
-                           '<strong>• Recovery Attempts:</strong> Additional attempts needed to recover from downgrades after failures.<br>' +
-                           '<strong>• Total Per Level:</strong> Combined direct and recovery attempts for that specific level.<br>' +
-                           '<strong>• Overall Total Attempts:</strong> Includes all direct enhancement attempts PLUS all recovery attempts across all levels.<br>' +
-                           'This is why the total attempts is significantly higher than the sum of direct attempts shown in the details.<br>' +
-                           '<span style="color: #ff0000; font-weight: bold; font-size: 1.1em;">Important: The cost of building failstacks is not included in these calculations.</span>';
+            note.innerHTML = '<strong>Note:</strong> These calculations include comprehensive cost analysis for enhancement without Cron stones.<br>' +
+                           '<strong>• Direct Attempts:</strong> The expected number of attempts needed at each level (calculated using precise mathematical formulas).<br>' +
+                           '<strong>• Recovery Attempts:</strong> Additional attempts needed to recover from downgrades after failures (with conservative cost modeling).<br>' +
+                           '<strong>• Failstack Building Costs:</strong> Includes the cost of building required failstacks using Black Stones, Crystallized Despair, and Origin of Dark Hunger.<br>' +
+                           '<strong>• Memory Fragment Costs:</strong> Durability repair costs with optional Artisan\'s Memory efficiency (when enabled).<br>' +
+                           '<strong>• Total Per Level:</strong> Combined direct enhancement, recovery, and failstack building costs for each level.<br>' +
+                           '<strong>• Overall Total:</strong> Comprehensive cost including all materials, failstacks, memory fragments, and recovery attempts across all levels.<br>' +
+                           '<span style="color: #ff0000; font-weight: bold; font-size: 1.1em;">Important: Failstack building costs are included up to 316 FS. Higher failstacks may require additional cost calculations.</span>';
         }
         
         resultsDiv.appendChild(note);
