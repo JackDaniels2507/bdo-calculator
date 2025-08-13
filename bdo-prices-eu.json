@@ -1,52 +1,57 @@
 {
   "4987": {
     "name": "Concentrated Magical Black Gem",
-    "price": 18818920,
-    "timestamp": "2025-08-13T18:19:36.611Z"
+    "price": 18232000,
+    "timestamp": "2025-08-13T20:56:09.983Z"
   },
   "4998": {
     "name": "Sharp Black Crystal Shard",
-    "price": 5144953,
-    "timestamp": "2025-08-13T18:19:34.148Z"
-  },
-  "5998": {
-    "name": "Origin of Dark Hunger",
-    "price": 0,
-    "timestamp": "2025-08-13T18:19:44.009Z"
+    "price": 5067196,
+    "timestamp": "2025-08-13T20:56:07.800Z"
   },
   "8411": {
     "name": "Crystallized Despair",
-    "price": 20846037,
-    "timestamp": "2025-08-13T18:19:41.545Z"
+    "price": 20694471,
+    "timestamp": "2025-08-13T20:56:14.591Z"
+  },
+  "16001": {
+    "name": "Black Stone",
+    "price": 154740,
+    "timestamp": "2025-08-13T20:56:19.016Z"
   },
   "44195": {
     "name": "Memory Fragment",
-    "price": 4357299,
-    "timestamp": "2025-08-13T18:19:29.185Z"
+    "price": 4359533,
+    "timestamp": "2025-08-13T20:56:03.337Z"
+  },
+  "65319": {
+    "name": "Origin of Dark Hunger",
+    "price": 1000000000,
+    "timestamp": "2025-08-13T20:56:16.835Z"
   },
   "721003": {
     "name": "Caphras Stone",
-    "price": 2386877,
-    "timestamp": "2025-08-13T18:19:31.661Z"
+    "price": 2416955,
+    "timestamp": "2025-08-13T20:56:05.601Z"
   },
   "752023": {
     "name": "Mass of Pure Magic",
     "price": 0,
-    "timestamp": "2025-08-13T18:19:39.077Z"
+    "timestamp": "2025-08-13T20:56:12.164Z"
   },
   "820934": {
     "name": "Primordial Black Stone",
-    "price": 49802356,
-    "timestamp": "2025-08-13T18:19:26.716Z"
+    "price": 49933680,
+    "timestamp": "2025-08-13T20:56:01.155Z"
   },
   "820979": {
     "name": "Essence of Dawn",
-    "price": 81056269,
-    "timestamp": "2025-08-13T18:19:21.711Z"
+    "price": 81147025,
+    "timestamp": "2025-08-13T20:55:56.380Z"
   },
   "820984": {
     "name": "DAWN",
     "price": 0,
-    "timestamp": "2025-08-13T18:19:24.252Z"
+    "timestamp": "2025-08-13T20:55:58.733Z"
   }
 }
