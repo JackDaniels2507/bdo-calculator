@@ -3398,6 +3398,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             memFragCountPerFailure = memFragOnlyData.memFragsCount;
         }
         
+        // Calculate failstack cost per attempt if enabled (before the simulation loop)
+        let failstackCostPerAttempt = 0;
+        if (includeFailstackCosts && startingFS > 0) {
+            const failstackCostData = await calculateFailstackBuildCost(startingFS);
+            results.failstackCost = failstackCostData.totalCost;
+            results.totalCost += results.failstackCost;
+            
+            // Calculate failstack cost per attempt for individual attempt cost display
+            failstackCostPerAttempt = results.failstackCost / attempts;
+        }
+        
         for (let i = 0; i < attempts; i++) {
             // Calculate base success chance using the utility function
             let successChance = calculateSuccessChance(item, startLevel, currentFS);
@@ -3465,7 +3476,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     originalChance: originalChance.toFixed(3),
                     streamEffect: streamEffect,
                     result: 'SUCCESS',
-                    cost: totalAttemptCost // No memory fragments for successful attempts
+                    cost: totalAttemptCost + failstackCostPerAttempt // Add proportional failstack cost
                 });
                 
                 // Reset failstack after successful attempt to simulate starting a new enhancement
@@ -3497,7 +3508,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     originalChance: originalChance.toFixed(3),
                     streamEffect: streamEffect,
                     result: 'FAIL',
-                    cost: failedAttemptCost // Includes memory fragments for failed attempts
+                    cost: failedAttemptCost + failstackCostPerAttempt // Includes memory fragments and proportional failstack cost
                 });
                 
                 // Increase failstack automatically when cron stones are used
@@ -3512,13 +3523,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
 
-        // Calculate failstack cost if enabled
-        if (includeFailstackCosts && startingFS > 0) {
-            const failstackCostData = await calculateFailstackBuildCost(startingFS);
-            results.failstackCost = failstackCostData.totalCost;
-            results.totalCost += results.failstackCost;
-        }
-        
         return results;
     }
     
@@ -3677,7 +3681,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 breakdownHTML += `<div><strong>Failstack Building:</strong> ${results.failstackCost.toLocaleString()} Silver</div>`;
             }
             
-            breakdownHTML += `<div><em>Average Cost Per Attempt:</em> ${Math.round((results.materialsCost + results.cronCost + artisanCost) / results.attempts).toLocaleString()} Silver</div>`;
+            breakdownHTML += `<div><em>Average Cost Per Attempt:</em> ${Math.round(results.totalCost / results.attempts).toLocaleString()} Silver</div>`;
             
             elements[4].innerHTML = breakdownHTML;
         } else {
