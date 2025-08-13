@@ -12,6 +12,8 @@ const itemIds = {
     'Sharp Black Crystal Shard': 4998,  // Sharp Black Crystal Shard ID
     'Concentrated Magical Black Gem': 4987, // Concentrated Magical Black Gem ID
     'Mass of Pure Magic': 752023, // Mass of Pure Magic ID
+    'Crystallized Despair': 8411, // Crystallized Despair ID
+    'Origin of Dark Hunger': 5998  // Origin of Dark Hunger ID
     // Add more items as needed
 };
 
