@@ -50,7 +50,234 @@ document.addEventListener('DOMContentLoaded', async function() {
         'Fallen God\'s Armor': ['BASE', 'I', 'II', 'III', 'IV', 'V'],
         'Preonne': ['BASE', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']
     };
-    
+
+    // Failstack building costs - defines what items and quantities are needed for specific failstack levels
+    const failstackCosts = {
+        50: {
+            itemId: 8411, 
+            quantity: 4
+        },
+        60: {
+            itemId: 8411, 
+            quantity: 8
+        },
+        70: {
+            itemId: 8411, 
+            quantity: 15
+        },
+        80: {
+            itemId: 8411, 
+            quantity: 25
+        },
+        90: {
+            itemId: 8411,
+            quantity: 35
+        },
+        100: {
+            itemId: 8411,
+            quantity: 50
+        }
+    };
+
+    // Origin of Dark Hunger failstack increase table
+    // Item ID 5998: Origin of Dark Hunger - Special item that increases failstack based on current FS level
+    const originOfDarkHungerIncrease = {
+        100: 26, 101: 26,
+        102: 25, 103: 25, 104: 25, 105: 25,
+        106: 24, 107: 24, 108: 24,
+        109: 23, 110: 23, 111: 23,
+        112: 22, 113: 22, 114: 22, 115: 22,
+        116: 21, 117: 21, 118: 21, 119: 21,
+        120: 20, 121: 20, 122: 20, 123: 20, 124: 20,
+        125: 19, 126: 19, 127: 19, 128: 19, 129: 19,
+        130: 18, 131: 18, 132: 18, 133: 18, 134: 18, 135: 18,
+        136: 17, 137: 17, 138: 17, 139: 17, 140: 17, 141: 17,
+        142: 16, 143: 16, 144: 16, 145: 16, 146: 16, 147: 16, 148: 16,
+        149: 15, 150: 15, 151: 15, 152: 15, 153: 15, 154: 15, 155: 15, 156: 15,
+        157: 14, 158: 14, 159: 14, 160: 14, 161: 14, 162: 14, 163: 14, 164: 14, 165: 14,
+        166: 13, 167: 13, 168: 13, 169: 13, 170: 13, 171: 13, 172: 13, 173: 13, 174: 13, 175: 13,
+        176: 12, 177: 12, 178: 12, 179: 12, 180: 12, 181: 12, 182: 12, 183: 12, 184: 12, 185: 12, 186: 12, 187: 12,
+        188: 11, 189: 11, 190: 11, 191: 11, 192: 11, 193: 11, 194: 11, 195: 11, 196: 11,
+        197: 10, 198: 10, 199: 10, 200: 10, 201: 10, 202: 10, 203: 10, 204: 10, 205: 10, 206: 10,
+        207: 9, 208: 9, 209: 9, 210: 9, 211: 9, 212: 9, 213: 9, 214: 9, 215: 9, 216: 9, 217: 9,
+        218: 8, 219: 8, 220: 8, 221: 8, 222: 8, 223: 8, 224: 8, 225: 8, 226: 8, 227: 8, 228: 8, 229: 8, 230: 8, 231: 8, 232: 8, 233: 8, 234: 8, 235: 8,
+        236: 7, 237: 7, 238: 7, 239: 7, 240: 7, 241: 7, 242: 7, 243: 7, 244: 7, 245: 7, 246: 7, 247: 7, 248: 7, 249: 7, 250: 7, 251: 7, 252: 7, 253: 7, 254: 7,
+        255: 6, 256: 6, 257: 6, 258: 6, 259: 6, 260: 6, 261: 6, 262: 6, 263: 6, 264: 6, 265: 6, 266: 6, 267: 6, 268: 6, 269: 6,
+        270: 5, 271: 5, 272: 5, 273: 5, 274: 5, 275: 5, 276: 5, 277: 5, 278: 5, 279: 5, 280: 5, 281: 5, 282: 5, 283: 5, 284: 5, 285: 5, 286: 5, 287: 5, 288: 5, 289: 5, 290: 5, 291: 5,
+        292: 4, 293: 4, 294: 4, 295: 4, 296: 4,
+        297: 3,
+        298: 2,
+        299: 1
+    };
+
+    // Permanent failstack constants
+    const permanentFailstacks = {
+        freeFailstacks: 3, // First 3 permanent failstacks are free
+        maxPaidFailstacks: 13, // Maximum number of paid permanent failstacks (like Valks' Cry)
+        paidFailstackCost: 6555891 // Cost per paid permanent failstack in silver
+    };
+
+    /**
+     * Calculates the optimal cost to build a specific failstack level
+     * @param {number} targetFS - The target failstack level to build
+     * @returns {Promise<Object>} - Object containing cost breakdown and details
+     */
+    async function calculateFailstackBuildCost(targetFS) {
+        let totalCost = 0;
+        let breakdown = {
+            freeFailstacks: 0,
+            paidFailstacks: 0,
+            paidFailstackCost: 0,
+            crystallizedDespairCost: 0,
+            crystallizedDespairCount: 0,
+            originOfDarkHungerCost: 0,
+            originOfDarkHungerCount: 0,
+            remainingFS: targetFS
+        };
+
+        // Step 1: Use free permanent failstacks (first 3 are free)
+        if (breakdown.remainingFS > 0) {
+            breakdown.freeFailstacks = Math.min(breakdown.remainingFS, permanentFailstacks.freeFailstacks);
+            breakdown.remainingFS -= breakdown.freeFailstacks;
+        }
+
+        // Step 2: Use paid permanent failstacks (up to 13 at 6,555,891 each)
+        if (breakdown.remainingFS > 0) {
+            breakdown.paidFailstacks = Math.min(breakdown.remainingFS, permanentFailstacks.maxPaidFailstacks);
+            breakdown.paidFailstackCost = breakdown.paidFailstacks * permanentFailstacks.paidFailstackCost;
+            totalCost += breakdown.paidFailstackCost;
+            breakdown.remainingFS -= breakdown.paidFailstacks;
+        }
+
+        // Step 3: Build remaining failstacks using items
+        if (breakdown.remainingFS > 0) {
+            if (breakdown.remainingFS <= 100) {
+                // Use Crystallized Despair for FS up to 100
+                const costData = await calculateCrystallizedDespairCost(breakdown.remainingFS);
+                breakdown.crystallizedDespairCost = costData.totalCost;
+                breakdown.crystallizedDespairCount = costData.totalCount;
+                totalCost += breakdown.crystallizedDespairCost;
+                breakdown.remainingFS = 0;
+            } else {
+                // First build to 100 with Crystallized Despair
+                const despairCostData = await calculateCrystallizedDespairCost(100);
+                breakdown.crystallizedDespairCost = despairCostData.totalCost;
+                breakdown.crystallizedDespairCount = despairCostData.totalCount;
+                totalCost += breakdown.crystallizedDespairCost;
+                
+                // Then use Origin of Dark Hunger for remaining FS above 100
+                const remainingAbove100 = breakdown.remainingFS - 100;
+                const hungerCostData = await calculateOriginOfDarkHungerCost(100, remainingAbove100);
+                breakdown.originOfDarkHungerCost = hungerCostData.totalCost;
+                breakdown.originOfDarkHungerCount = hungerCostData.count;
+                totalCost += breakdown.originOfDarkHungerCost;
+                breakdown.remainingFS = 0;
+            }
+        }
+
+        return {
+            targetFS,
+            totalCost,
+            breakdown
+        };
+    }
+
+    /**
+     * Calculates cost for building failstacks with Crystallized Despair up to specified level
+     * @param {number} targetFS - Target failstack level (max 100)
+     * @returns {Promise<Object>} - Cost and count data
+     */
+    async function calculateCrystallizedDespairCost(targetFS) {
+        const despairPrice = await fetchItemPrice(currentRegion, 8411); // Crystallized Despair
+        let totalCost = 0;
+        let totalCount = 0;
+
+        // If targetFS is very low (below our minimum defined level), use a flat rate
+        const definedLevels = Object.keys(failstackCosts).map(Number).sort((a, b) => a - b);
+        const minDefinedLevel = definedLevels[0] || 50; // Default to 50 if no levels defined
+        
+        if (targetFS < minDefinedLevel) {
+            // For low failstack levels, use a constant rate of approximately 46M silver as suggested
+            const lowFSConstantCost = 46000000; // 46 million silver
+            return {
+                totalCost: lowFSConstantCost,
+                totalCount: Math.ceil(lowFSConstantCost / despairPrice) // Estimate count based on price
+            };
+        }
+        
+        let currentFS = 0;
+        
+        // Find the exact match or the highest level <= targetFS
+        let exactLevel = null;
+        for (const level of definedLevels) {
+            if (level <= targetFS) {
+                exactLevel = level;
+            } else {
+                break;
+            }
+        }
+        
+        if (exactLevel !== null) {
+            // If we have an exact match or a level to start from
+            const cost = failstackCosts[exactLevel];
+            totalCost += cost.quantity * despairPrice;
+            totalCount += cost.quantity;
+            currentFS = exactLevel;
+        }
+
+        // If we need more FS beyond the exact level, calculate cost per FS
+        if (currentFS < targetFS && currentFS < 100) {
+            const remainingFS = targetFS - currentFS;
+            
+            // Find the next level to calculate cost per FS
+            const nextLevel = definedLevels.find(level => level > currentFS);
+            if (nextLevel) {
+                const currentLevelCost = failstackCosts[currentFS];
+                const nextLevelCost = failstackCosts[nextLevel];
+                const fsGap = nextLevel - currentFS;
+                const costGap = nextLevelCost.quantity - currentLevelCost.quantity;
+                const costPerFS = (costGap * despairPrice) / fsGap;
+                
+                const additionalCost = remainingFS * costPerFS;
+                const additionalCount = Math.ceil(remainingFS * costGap / fsGap);
+                
+                totalCost += additionalCost;
+                totalCount += additionalCount;
+            }
+        }
+
+        return {
+            totalCost,
+            totalCount
+        };
+    }
+
+    /**
+     * Calculates how many Origin of Dark Hunger items needed to build from startFS to targetFS
+     * @param {number} startFS - Starting failstack level
+     * @param {number} fsToGain - How many failstacks to gain
+     * @returns {Promise<Object>} - Cost and count data
+     */
+    async function calculateOriginOfDarkHungerCost(startFS, fsToGain) {
+        const hungerPrice = await fetchItemPrice(currentRegion, 5998); // Origin of Dark Hunger
+        let currentFS = startFS;
+        let count = 0;
+        let fsGained = 0;
+
+        while (fsGained < fsToGain && currentFS < 299) {
+            const fsIncrease = originOfDarkHungerIncrease[currentFS] || 1;
+            count++;
+            fsGained += fsIncrease;
+            currentFS += fsIncrease;
+        }
+
+        return {
+            count,
+            totalCost: count * hungerPrice,
+            actualFSGained: fsGained
+        };
+    }
+
     // ============================================
     // DOM Elements
     // ============================================
@@ -67,6 +294,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const useCostumeCronCheckbox = null;
     const useMemFragsCheckbox = document.getElementById('use-mem-frags');
     const useArtisanMemoryCheckbox = document.getElementById('use-artisan-memory');
+    const includeFailstackCostCheckbox = document.getElementById('include-failstack-cost');
     
     // Get simulation tab elements
     const simItemSelect = document.getElementById('sim-item-select');
@@ -80,6 +308,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const simUseRecommendedFS = document.getElementById('sim-use-recommended-fs');
     const simUseMemFrags = document.getElementById('sim-use-mem-frags');
     const simUseArtisanMemory = document.getElementById('sim-use-artisan-memory');
+    const simIncludeFailstackCost = document.getElementById('sim-include-failstack-cost');
     
     // Get tab navigation elements
     const tabs = document.querySelectorAll('.tab');
@@ -546,7 +775,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         44195: "Memory Fragment",
         4998: "Sharp Black Crystal Shard",
         4987: "Concentrated Magical Black Gem",
-        752023: "Mass of Pure Magic"
+        752023: "Mass of Pure Magic",
+        8411: "Crystallized Despair",
+        5998: "Origin of Dark Hunger"
     };
     
     // Cache control to reduce network requests
@@ -574,7 +805,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Concentrated Magical Black Gem
             4987: 15000000, // 15 million silver based on estimated value
             // Mass of Pure Magic
-            752023: 500000 // 500 thousand silver based on estimated value
+            752023: 500000, // 500 thousand silver based on estimated value
+            // Crystallized Despair
+            8411: 36000000,  // 36 million silver based on estimated value
+            // Origin of Dark Hunger
+            5998: 1000000000  // 1000 million silver based on estimated value (special failstack item)
         },
         'NA': {
             // Essence of Dawn with a small price variation for NA
@@ -592,7 +827,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Concentrated Magical Black Gem
             4987: 15000000, // 15 million silver based on estimated value
             // Mass of Pure Magic
-            752023: 500000 // 500 thousand silver based on estimated value
+            752023: 500000, // 500 thousand silver based on estimated value
+            // Crystallized Despair
+            8411: 36000000,  // 36 million silver based on estimated value
+            // Origin of Dark Hunger
+            5998: 1000000000  // 1000 million silver based on estimated value (special failstack item)
         }
     };
     
@@ -797,9 +1036,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
         
-        // Total cost for this attempt 
-        const totalCost = materialsCost + cronCost + memFragsCost;
-        console.log(`Total attempt cost for ${item} ${level}: ${totalCost.toLocaleString()} (materials: ${materialsCost.toLocaleString()}, cron: ${cronCost.toLocaleString()}, memory frags: ${memFragsCost.toLocaleString()})`);
+        // Total cost for this attempt (excluding memory fragments as they're calculated separately in enhancement logic)
+        const totalCost = materialsCost + cronCost;
+        console.log(`Total attempt cost for ${item} ${level}: ${totalCost.toLocaleString()} (materials: ${materialsCost.toLocaleString()}, cron: ${cronCost.toLocaleString()}, memory frags calculated separately: ${memFragsCost.toLocaleString()})`);
         
         // Get the durability loss and memory fragment per durability values
         const durabilityLossVal = enhancementItemRequirements[item]?.durabilityLoss || 0;
@@ -1643,6 +1882,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         const memFragsCostArray = [];
         const memFragsCountArray = [];
         const originalMemFragsCountArray = []; // New array for original fragment counts
+        const recoveryCostArray = []; // New array for recovery costs
+        const recoveryFailstackCostArray = []; // New array for recovery failstack costs
         const cronCostArray = [];
         const cronStoneCountArray = [];
         let totalAttempts = 0;
@@ -1650,12 +1891,17 @@ document.addEventListener('DOMContentLoaded', async function() {
         let totalMemFragsCost = 0;
         let totalMemFragsCount = 0;
         let totalOriginalMemFragsCount = 0; // New total for original fragment counts
+        let totalRecoveryCost = 0; // New total for recovery costs
+        let totalRecoveryFailstackCost = 0; // New total for recovery failstack costs
         let totalCronCost = 0;
         let totalCronCount = 0;
         
         // Check if we're using memory fragments and artisan's memory
         const useMemFrags = useMemFragsCheckbox && useMemFragsCheckbox.checked;
         const useArtisan = useArtisanMemoryCheckbox && useArtisanMemoryCheckbox.checked;
+        
+        // Check if we're including failstack costs
+        const includeFailstackCosts = includeFailstackCostCheckbox && includeFailstackCostCheckbox.checked;
         
         // Arrays to track which levels use cron stones
         const useCronPerLevelArray = [];
@@ -1743,6 +1989,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             let levelCost = 0;
             let levelMemFragsCost = 0;
             let levelMemFragsCount = 0;
+            let levelRecoveryCost = 0; // Track recovery cost separately for display
+            let levelRecoveryFailstackCost = 0; // Track recovery failstack cost separately
             
             if (!useCronForThisLevel && currentLevel !== 'BASE') {
                 // When not using cron stones and item is not at BASE level,
@@ -1754,7 +2002,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 
                 // We need to calculate the full cost of bringing an item back up after downgrade
                 if (index > 0) {
-                    // Cost of the current level attempts
+                    // Cost of the current level attempts (materials only, no memory fragments yet)
                     const currentLevelAttemptCost = costDetails.totalCost * expectedAttempts;
                     
                     // Calculate the complete cost to recover from a downgrade
@@ -1807,14 +2055,18 @@ document.addEventListener('DOMContentLoaded', async function() {
                         const levelSuccessChance = calculateSuccessChance(item, prevLevel, prevFS);
                         const levelExpectedAttempts = 100 / levelSuccessChance;
                         
+                        // Use a simpler recovery multiplier that doesn't grow exponentially
+                        // Only apply the expected downgrades for the immediate previous level
+                        const currentRecoveryMultiplier = (prevIdx === previousLevels.length - 1) ? recoveryCostMultiplier : recoveryCostMultiplier * 0.5;
+                        
                         // Total cost at this level considering how many times we need to go through it
-                        const levelTotalCost = levelCostDetails.totalCost * levelExpectedAttempts * recoveryCostMultiplier;
+                        const levelTotalCost = levelCostDetails.totalCost * levelExpectedAttempts * currentRecoveryMultiplier;
                         downgradeCost += levelTotalCost;
                         
                         // If we're calculating memory fragment costs
                         if (useMemFrags) {
-                            const levelMemCost = levelCostDetails.memFragsCost * (levelExpectedAttempts - 1) * recoveryCostMultiplier; // -1 for successful attempt
-                            const levelMemCount = levelCostDetails.memFragsCount * (levelExpectedAttempts - 1) * recoveryCostMultiplier;
+                            const levelMemCost = levelCostDetails.memFragsCost * (levelExpectedAttempts - 1) * currentRecoveryMultiplier; // -1 for successful attempt
+                            const levelMemCount = levelCostDetails.memFragsCount * (levelExpectedAttempts - 1) * currentRecoveryMultiplier;
                             downgradedMemFragsCost += levelMemCost;
                             downgradedMemFragsCount += levelMemCount;
                         }
@@ -1822,7 +2074,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         // Track cron stone usage in recovery attempts
                         if (useCronForRecovery) {
                             const cronStoneCount = enhancementItemRequirements[item]?.[prevLevel]?.cronStones || 0;
-                            const levelCronCount = cronStoneCount * levelExpectedAttempts * recoveryCostMultiplier;
+                            const levelCronCount = cronStoneCount * levelExpectedAttempts * currentRecoveryMultiplier;
                             
                             // Check which type of cron stones we're using for this recovery level
                             let cronPrice;
@@ -1842,14 +2094,23 @@ document.addEventListener('DOMContentLoaded', async function() {
                             console.log(`Adding recovery cron costs for ${prevLevel}: ${Math.round(levelCronCount).toLocaleString()} stones (${Math.round(levelCronCost).toLocaleString()} Silver)`);
                         }
                         
-                        // For the next lower level, we need to account for additional failures
-                        // at this level that cause further downgrades
-                        const levelFailRate = (100 - levelSuccessChance) / 100;
-                        recoveryCostMultiplier *= levelFailRate * levelExpectedAttempts;
+                        // Track failstack costs for recovery attempts if enabled
+                        if (includeFailstackCosts && prevFS > 0) {
+                            const recoveryFailstackCostData = await calculateFailstackBuildCost(prevFS);
+                            const recoveryFailstackCost = recoveryFailstackCostData.totalCost * levelExpectedAttempts * currentRecoveryMultiplier;
+                            
+                            // Add to recovery failstack cost for this level
+                            levelRecoveryFailstackCost += recoveryFailstackCost;
+                            
+                            console.log(`Adding recovery failstack costs for ${prevLevel} (FS ${prevFS}): ${Math.round(recoveryFailstackCost).toLocaleString()} Silver`);
+                        }
+                        
+                        // Don't exponentially increase the multiplier - use a more conservative approach
+                        // This prevents unrealistic explosion of recovery costs
                     }
                     
-                    // Total cost is current level attempts + downgrade recovery
-                    levelCost = currentLevelAttemptCost + downgradeCost;
+                    // Store recovery cost separately for display purposes
+                    levelRecoveryCost = downgradeCost;
                     
                     // Calculate memory fragment costs for failures
                     if (useMemFrags) {
@@ -1861,25 +2122,28 @@ document.addEventListener('DOMContentLoaded', async function() {
                         levelMemFragsCount = currentLevelMemFragsCount + downgradedMemFragsCount;
                     }
                     
+                    // Total cost is current level attempts + downgrade recovery + memory fragments
+                    levelCost = currentLevelAttemptCost + downgradeCost + levelMemFragsCost;
+                    
                     console.log(`Including complete downgrade recovery cost for ${currentLevel}: ${downgradeCost.toLocaleString()}`);
                     console.log(`  - ${expectedDowngrades.toFixed(2)} expected initial downgrades`);
                 } else {
                     // First level enhancement can't be downgraded below start level
                     levelCost = costDetails.totalCost * expectedAttempts;
-                    // Store materials cost separately
-                    const materialsCost = costDetails.materialsCost * expectedAttempts;
                     
                     // Calculate memory fragment costs for failures at this level
                     if (useMemFrags) {
                         levelMemFragsCost = costDetails.memFragsCost * (expectedAttempts - 1); // -1 because we succeed once
                         levelMemFragsCount = costDetails.memFragsCount * (expectedAttempts - 1);
+                        levelCost += levelMemFragsCost; // Add memory fragment costs to level cost
                     }
+                    
+                    // No recovery cost for first level
+                    levelRecoveryCost = 0;
                 }
             } else {
                 // With cron stones, no downgrades occur but durability is still lost
                 levelCost = costDetails.totalCost * expectedAttempts;
-                // Store materials cost separately
-                const materialsCost = costDetails.materialsCost * expectedAttempts;
                 
                 // Store cron stone details
                 const cronCost = costDetails.cronCost * expectedAttempts;
@@ -1889,10 +2153,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (useMemFrags) {
                     levelMemFragsCost = costDetails.memFragsCost * (expectedAttempts - 1); // -1 because successful attempt doesn't lose durability
                     levelMemFragsCount = costDetails.memFragsCount * (expectedAttempts - 1);
+                    levelCost += levelMemFragsCost; // Add memory fragment costs to level cost
                 } else {
                     levelMemFragsCost = 0;
                     levelMemFragsCount = 0;
                 }
+                
+                // No recovery cost when using cron stones
+                levelRecoveryCost = 0;
             }
             
             // Store the direct attempts for this level with more precision
@@ -1964,6 +2232,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             memFragsCostArray.push(levelMemFragsCost);
             memFragsCountArray.push(Math.round(levelMemFragsCount)); // Round for consistency with totals
             
+            // Store recovery cost for this level
+            recoveryCostArray.push(levelRecoveryCost);
+            totalRecoveryCost += levelRecoveryCost;
+            
+            // Store recovery failstack cost for this level
+            recoveryFailstackCostArray.push(levelRecoveryFailstackCost);
+            totalRecoveryFailstackCost += levelRecoveryFailstackCost;
+            
             // Track the original memory fragment count (without Artisan's effect)
             // Always use the originalFragCount from costDetails, which is calculated correctly
             // regardless of whether Artisan's Memory is used
@@ -2000,7 +2276,57 @@ document.addEventListener('DOMContentLoaded', async function() {
         // The final total cost is just totalCostValue since memory fragment costs 
         // are already included in the levelCost calculations
         let finalTotalCost = totalCostValue;
+
+        // Calculate failstack costs if checkbox is enabled
+        let totalFailstackCost = 0;
+        let failstackCostBreakdown = null;
+        const failstackCostPerLevel = [];
+        const failstackCostBreakdownPerLevel = [];
         
+        if (includeFailstackCosts) {
+            // Calculate the cost for each individual failstack level used
+            // This represents the actual cost since you need to build failstacks for each enhancement level
+            for (let i = 0; i < failstacks.length; i++) {
+                const fs = failstacks[i];
+                
+                if (fs > 0) {
+                    const failstackCostData = await calculateFailstackBuildCost(fs);
+                    failstackCostPerLevel.push(failstackCostData.totalCost);
+                    failstackCostBreakdownPerLevel.push(failstackCostData.breakdown);
+                    totalFailstackCost += failstackCostData.totalCost; // Sum all individual costs
+                } else {
+                    failstackCostPerLevel.push(0);
+                    failstackCostBreakdownPerLevel.push(null);
+                }
+            }
+            
+            // For the overall breakdown display, use the maximum failstack data
+            const maxFailstack = Math.max(...failstacks);
+            if (maxFailstack > 0) {
+                const maxFailstackCostData = await calculateFailstackBuildCost(maxFailstack);
+                failstackCostBreakdown = maxFailstackCostData.breakdown;
+            }
+            
+            // Add recovery failstack cost to total failstack cost
+            totalFailstackCost += totalRecoveryFailstackCost;
+            
+            // Add failstack cost to final total
+            finalTotalCost += totalFailstackCost;
+            
+            // Add failstack costs to individual level costs for display purposes
+            for (let i = 0; i < costPerLevelArray.length; i++) {
+                if (failstackCostPerLevel[i] > 0) {
+                    costPerLevelArray[i] += failstackCostPerLevel[i];
+                }
+            }
+        } else {
+            // Fill arrays with zeros if not including failstack costs
+            for (let i = 0; i < failstacks.length; i++) {
+                failstackCostPerLevel.push(0);
+                failstackCostBreakdownPerLevel.push(null);
+            }
+        }
+
         // Calculate total material cost
         let totalMaterialCost = 0;
         for (let i = 0; i < materialsCostArray.length; i++) {
@@ -2029,6 +2355,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             totalMemFragsCount: totalMemFragsCount, // Already rounded at individual level
             originalMemFragsCount: originalMemFragsCountArray,
             totalOriginalMemFragsCount: totalOriginalMemFragsCount, // Already rounded at individual level
+            recoveryCost: recoveryCostArray, // Recovery costs per level
+            totalRecoveryCost: Math.round(totalRecoveryCost), // Total recovery cost
+            recoveryFailstackCost: recoveryFailstackCostArray, // Recovery failstack costs per level
+            totalRecoveryFailstackCost: Math.round(totalRecoveryFailstackCost), // Total recovery failstack cost
             cronCost: cronCostArray,
             cronStoneCount: cronStoneCountArray,
             totalCronCost: Math.round(totalCronCost),
@@ -2036,7 +2366,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             includeMemFrags: useMemFrags,
             useCronStones: useCronPerLevelArray.some(value => value), // Check if any level uses cron stones
             useArtisanMemory: useArtisan,
-            useCronPerLevel: useCronPerLevelArray // Track which levels used cron stones
+            useCronPerLevel: useCronPerLevelArray, // Track which levels used cron stones
+            includeFailstackCosts: includeFailstackCosts,
+            totalFailstackCost: Math.round(totalFailstackCost),
+            failstackCostBreakdown: failstackCostBreakdown,
+            failstackCostPerLevel: failstackCostPerLevel.map(cost => Math.round(cost)),
+            failstackCostBreakdownPerLevel: failstackCostBreakdownPerLevel
         };
     }
     
@@ -2067,6 +2402,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Start with material cost
         costBreakdown.innerHTML = `• <strong>Material Cost:</strong> ${Math.round(results.totalMaterialCost).toLocaleString()} Silver`;
+        
+        // Add recovery cost if any levels have recovery costs
+        if (results.totalRecoveryCost && results.totalRecoveryCost > 0) {
+            costBreakdown.innerHTML += `<br>• <strong>Recovery Cost:</strong> ${Math.round(results.totalRecoveryCost).toLocaleString()} Silver`;
+        }
         
         // Check if any cron stones were used
         if (results.totalCronCount > 0) {
@@ -2108,6 +2448,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             } else {
                 costBreakdown.innerHTML += `<br>• <strong>Memory Fragments:</strong> ${results.totalMemFragsCount.toLocaleString()} fragments (${Math.round(results.totalMemFragsCost).toLocaleString()} Silver)`;
             }
+        }
+
+        // Add failstack cost information if included
+        if (results.includeFailstackCosts && results.totalFailstackCost > 0) {
+            const directFailstackCost = results.totalFailstackCost - (results.totalRecoveryFailstackCost || 0);
+            
+            if (results.totalRecoveryFailstackCost && results.totalRecoveryFailstackCost > 0) {
+                costBreakdown.innerHTML += `<br>• <strong>Failstack Building Cost:</strong> ${Math.round(results.totalFailstackCost).toLocaleString()} Silver`;
+                costBreakdown.innerHTML += `<br><span style="margin-left: 15px; font-size: 0.9em; color: #e67e22;">Direct: ${Math.round(directFailstackCost).toLocaleString()} Silver, Recovery: ${Math.round(results.totalRecoveryFailstackCost).toLocaleString()} Silver</span>`;
+            } else {
+                costBreakdown.innerHTML += `<br>• <strong>Failstack Building Cost:</strong> ${Math.round(results.totalFailstackCost).toLocaleString()} Silver`;
+            }
+            // Note: Detailed breakdown is shown per enhancement level below
         }
         
         // Always add the cost breakdown to the cost info
@@ -2226,6 +2579,31 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Show the material cost
             detailContent += `<br><span style="margin-left: 15px; color: #2980b9;">• Material Cost: ${Math.round(results.materialsCost[i]).toLocaleString()} Silver</span>`;
             
+            // Add memory fragment info if included
+            if (results.includeMemFrags) {
+                if (useArtisanMemoryCheckbox && useArtisanMemoryCheckbox.checked) {
+                    // Get the original fragment count and recalculate with Artisan's Memory
+                    const originalFragCount = Math.round(results.originalMemFragsCount[i]);
+                    const memFragPrice = marketPrices[currentRegion][44195] || 0;
+                    
+                    // Recalculate the actual fragment count with Artisan's Memory
+                    // Integer division (whole part)
+                    const wholePart = Math.floor(originalFragCount / 5);
+                    // Remainder calculation
+                    const remainder = originalFragCount % 5;
+                    // Add the whole part plus the actual remainder value
+                    const artisanFragCount = wholePart + remainder;
+                    
+                    // Calculate cost based on the recalculated fragment count
+                    const artisanCost = artisanFragCount * memFragPrice;
+                    
+                    detailContent += `<br><span style="margin-left: 15px; color: #9b59b6;">• Memory Fragments: ${artisanFragCount.toLocaleString()} fragments (${Math.round(artisanCost).toLocaleString()} Silver)</span>`;
+                    detailContent += `<br><span style="margin-left: 30px; font-size: 0.85em; color: #9b59b6;">Would need ${originalFragCount.toLocaleString()} fragments without Artisan's Memory</span>`;
+                } else {
+                    detailContent += `<br><span style="margin-left: 15px; color: #9b59b6;">• Memory Fragments: ${Math.round(results.memFragsCount[i]).toLocaleString()} fragments (${Math.round(results.memFragsCost[i]).toLocaleString()} Silver)</span>`;
+                }
+            }
+
             // Add cron stone cost details if cron stones are used for this level
             if (results.useCronPerLevel && results.useCronPerLevel[i] && results.cronCost && results.cronCost[i] > 0) {
                 // Special message for first level cron when not using cron for all levels
@@ -2246,30 +2624,50 @@ document.addEventListener('DOMContentLoaded', async function() {
                     detailContent += `<br><span style="margin-left: 15px; color: #3498db;">• Cron Stones: ${Math.round(results.cronStoneCount[i]).toLocaleString()} (${Math.round(results.cronCost[i]).toLocaleString()} Silver)</span>`;
                 }
             }
-                                
-            // Add memory fragment info if included
-            if (results.includeMemFrags) {
-                if (useArtisanMemoryCheckbox && useArtisanMemoryCheckbox.checked) {
-                    // Get the original fragment count and recalculate with Artisan's Memory
-                    const originalFragCount = Math.round(results.originalMemFragsCount[i]);
-                    const memFragPrice = marketPrices[currentRegion][44195] || 0;
+
+            // Add failstack cost info if included (moved to bottom section)
+            if (results.includeFailstackCosts && results.failstackCostPerLevel && results.failstackCostPerLevel[i] > 0) {
+                detailContent += `<br><span style="margin-left: 15px; color: #e67e22;">• Failstack Building Cost: ${results.failstackCostPerLevel[i].toLocaleString()} Silver</span>`;
+                
+                // Add detailed breakdown if available for this level
+                if (results.failstackCostBreakdownPerLevel && results.failstackCostBreakdownPerLevel[i]) {
+                    const breakdown = results.failstackCostBreakdownPerLevel[i];
+                    let detailText = '<br><span style="margin-left: 30px; font-size: 0.8em; color: #e67e22;">';
                     
-                    // Recalculate the actual fragment count with Artisan's Memory
-                    // Integer division (whole part)
-                    const wholePart = Math.floor(originalFragCount / 5);
-                    // Remainder calculation
-                    const remainder = originalFragCount % 5;
-                    // Add the whole part plus the actual remainder value
-                    const artisanFragCount = wholePart + remainder;
+                    if (breakdown.freeFailstacks > 0) {
+                        detailText += `${breakdown.freeFailstacks} free permanent FS`;
+                    }
                     
-                    // Calculate cost based on the recalculated fragment count
-                    const artisanCost = artisanFragCount * memFragPrice;
+                    if (breakdown.paidFailstacks > 0) {
+                        if (breakdown.freeFailstacks > 0) detailText += ', ';
+                        detailText += `${breakdown.paidFailstacks} paid permanent FS (${Math.round(breakdown.paidFailstackCost).toLocaleString()} Silver)`;
+                    }
                     
-                    detailContent += `<br><span style="margin-left: 15px; color: #9b59b6;">• Memory Fragments: ${artisanFragCount.toLocaleString()} with Artisan's Memory (${Math.round(artisanCost).toLocaleString()} Silver)</span>`;
-                    detailContent += `<br><span style="margin-left: 30px; font-size: 0.85em; color: #9b59b6;">Would need ${originalFragCount.toLocaleString()} fragments without Artisan's Memory</span>`;
-                } else {
-                    detailContent += `<br><span style="margin-left: 15px; color: #9b59b6;">• Memory Fragments: ${Math.round(results.memFragsCount[i]).toLocaleString()} (${Math.round(results.memFragsCost[i]).toLocaleString()} Silver)</span>`;
+                    if (breakdown.crystallizedDespairCount > 0) {
+                        if (breakdown.freeFailstacks > 0 || breakdown.paidFailstacks > 0) detailText += ', ';
+                        detailText += `${breakdown.crystallizedDespairCount} Crystallized Despair (${Math.round(breakdown.crystallizedDespairCost).toLocaleString()} Silver)`;
+                    }
+                    
+                    if (breakdown.originOfDarkHungerCount > 0) {
+                        if (breakdown.freeFailstacks > 0 || breakdown.paidFailstacks > 0 || breakdown.crystallizedDespairCount > 0) detailText += ', ';
+                        detailText += `${breakdown.originOfDarkHungerCount} Origin of Dark Hunger (${Math.round(breakdown.originOfDarkHungerCost).toLocaleString()} Silver)`;
+                    }
+                    
+                    detailText += '</span>';
+                    detailContent += detailText;
                 }
+            }
+            
+            // Add recovery cost if this level has recovery costs (moved to bottom)
+            if (results.recoveryCost && results.recoveryCost[i] > 0) {
+                detailContent += `<br><span style="margin-left: 15px; color: #e74c3c;">• Recovery Cost: ${Math.round(results.recoveryCost[i]).toLocaleString()} Silver</span>`;
+                detailContent += `<br><span style="margin-left: 30px; font-size: 0.85em; color: #e74c3c;">Cost to re-enhance after expected downgrades</span>`;
+            }
+            
+            // Add recovery failstack cost if this level has recovery failstack costs (moved to bottom)
+            if (results.includeFailstackCosts && results.recoveryFailstackCost && results.recoveryFailstackCost[i] > 0) {
+                detailContent += `<br><span style="margin-left: 15px; color: #e67e22;">• Recovery Failstack Building Cost: ${Math.round(results.recoveryFailstackCost[i]).toLocaleString()} Silver</span>`;
+                detailContent += `<br><span style="margin-left: 30px; font-size: 0.85em; color: #e67e22;">Cost to rebuild failstacks for recovery attempts</span>`;
             }
                                 
             // Add note about downgrades if not using cron and not enhancing from BASE level
@@ -2714,7 +3112,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (simAttempts) simAttempts.addEventListener('input', checkSimulationInputs);
     
     // Simulation function
-    async function runSimulation(item, startLevel, targetLevel, startingFS, attempts, useCron, useMemFrags, praygeOption, isUsingCostumeCron = false, useArtisan = false) {
+    async function runSimulation(item, startLevel, targetLevel, startingFS, attempts, useCron, useMemFrags, praygeOption, isUsingCostumeCron = false, useArtisan = false, includeFailstackCosts = false) {
         // Check if per-level cron settings are available for this item
         const useCronPerLevel = [];
         const cronTypePerLevel = [];
@@ -2752,10 +3150,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             cronCost: 0,
             memFragsCost: 0,
             memFragsCount: 0,  // Track actual memory fragment count
+            failstackCost: 0,  // Track failstack building cost
             attemptLog: [],
             praygeOption: praygeOption, // Track which streamer the user prayed to
             isUsingCostumeCron: isUsingCostumeCron, // Track if using costume cron stones
-            useArtisan: useArtisan // Track if using Artisan's Memory
+            useArtisan: useArtisan, // Track if using Artisan's Memory
+            includeFailstackCosts: includeFailstackCosts // Track if including failstack costs
         };
         
         // Run the simulation for the specified number of attempts
@@ -2895,6 +3295,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                     currentFS += 1;
                 }
             }
+        }
+
+        // Calculate failstack cost if enabled
+        if (includeFailstackCosts && startingFS > 0) {
+            const failstackCostData = await calculateFailstackBuildCost(startingFS);
+            results.failstackCost = failstackCostData.totalCost;
+            results.totalCost += results.failstackCost;
         }
         
         return results;
@@ -3044,20 +3451,34 @@ document.addEventListener('DOMContentLoaded', async function() {
             const originalCost = originalFragCount * memFragPrice;
             const savings = originalCost - artisanCost;
             
-            elements[4].innerHTML = `
+            let breakdownHTML = `
                 <div><strong>Materials:</strong> ${results.materialsCost.toLocaleString()} Silver</div>
                 <div><strong>Cron Stones:</strong> ${results.cronCost.toLocaleString()} Silver ${results.cronCost > 0 ? `<span style="color: #888; font-style: italic; font-size: 0.9em;">(${cronTypeText})</span>` : ''}</div>
                 <div><strong>Memory Fragments:</strong> ${artisanFragCount.toLocaleString()} fragments with Artisan's Memory (${artisanCost.toLocaleString()} Silver)</div>
-                <div style="margin-left: 20px; color: #27ae60; font-size: 0.9em;">✓ Saved ~${savings.toLocaleString()} Silver (reduced from ${originalFragCount} fragments)</div>
-                <div><em>Average Cost Per Attempt:</em> ${Math.round((results.materialsCost + results.cronCost + artisanCost) / results.attempts).toLocaleString()} Silver</div>
-            `;
+                <div style="margin-left: 20px; color: #27ae60; font-size: 0.9em;">✓ Saved ~${savings.toLocaleString()} Silver (reduced from ${originalFragCount} fragments)</div>`;
+            
+            // Add failstack cost if included
+            if (results.includeFailstackCosts && results.failstackCost > 0) {
+                breakdownHTML += `<div><strong>Failstack Building:</strong> ${results.failstackCost.toLocaleString()} Silver</div>`;
+            }
+            
+            breakdownHTML += `<div><em>Average Cost Per Attempt:</em> ${Math.round((results.materialsCost + results.cronCost + artisanCost) / results.attempts).toLocaleString()} Silver</div>`;
+            
+            elements[4].innerHTML = breakdownHTML;
         } else {
-            elements[4].innerHTML = `
+            let breakdownHTML = `
                 <div><strong>Materials:</strong> ${results.materialsCost.toLocaleString()} Silver</div>
                 <div><strong>Cron Stones:</strong> ${results.cronCost.toLocaleString()} Silver ${results.cronCost > 0 ? `<span style="color: #888; font-style: italic; font-size: 0.9em;">(${cronTypeText})</span>` : ''}</div>
-                <div><strong>Memory Fragments:</strong> ${results.memFragsCost.toLocaleString()} Silver</div>
-                <div><em>Average Cost Per Attempt:</em> ${Math.round(results.totalCost / results.attempts).toLocaleString()} Silver</div>
-            `;
+                <div><strong>Memory Fragments:</strong> ${results.memFragsCost.toLocaleString()} Silver</div>`;
+            
+            // Add failstack cost if included
+            if (results.includeFailstackCosts && results.failstackCost > 0) {
+                breakdownHTML += `<div><strong>Failstack Building:</strong> ${results.failstackCost.toLocaleString()} Silver</div>`;
+            }
+            
+            breakdownHTML += `<div><em>Average Cost Per Attempt:</em> ${Math.round(results.totalCost / results.attempts).toLocaleString()} Silver</div>`;
+            
+            elements[4].innerHTML = breakdownHTML;
         }
         
         // Add all elements to the results div
@@ -3318,13 +3739,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     // Helper function to run simulation after payment
-    async function runSimulationAfterPayment(item, startLevel, targetLevel, startingFS, attempts, useCron, useMemFrags, praygeOption, isUsingCostumeCron, useArtisan) {
+    async function runSimulationAfterPayment(item, startLevel, targetLevel, startingFS, attempts, useCron, useMemFrags, praygeOption, isUsingCostumeCron, useArtisan, includeFailstackCosts) {
         try {
             // Show a loading message
             simResultsDiv.innerHTML = '<p>Running enhanced simulation with Blue\'s blessing...</p>';
             simResultsDiv.className = 'results-container show';
             
-            const simulationResults = await runSimulation(item, startLevel, targetLevel, startingFS, attempts, useCron, useMemFrags, praygeOption, isUsingCostumeCron, useArtisan);
+            const simulationResults = await runSimulation(item, startLevel, targetLevel, startingFS, attempts, useCron, useMemFrags, praygeOption, isUsingCostumeCron, useArtisan, includeFailstackCosts);
             displaySimulationResults(simulationResults);
         } catch (error) {
             console.error('Error in simulation:', error);
@@ -3347,6 +3768,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const useCron = simUseCron.checked || simUseCostumeCron.checked;
             const useMemFrags = simUseMemFrags.checked;
             const useArtisan = simUseArtisanMemory && simUseArtisanMemory.checked;
+            const includeFailstackCosts = simIncludeFailstackCost && simIncludeFailstackCost.checked;
             // Track which cron stone option is being used
             const isUsingCostumeCron = simUseCostumeCron && simUseCostumeCron.checked;
             // Removed addFSAfterFail checkbox - failstacks will automatically increment when using cron stones
@@ -3377,13 +3799,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (praygeOption === 'blue') {
                     showPaymentModal(() => {
                         // Run simulation after payment is "processed"
-                        runSimulationAfterPayment(item, startLevel, targetLevel, startingFS, attempts, useCron, useMemFrags, praygeOption, isUsingCostumeCron, useArtisan);
+                        runSimulationAfterPayment(item, startLevel, targetLevel, startingFS, attempts, useCron, useMemFrags, praygeOption, isUsingCostumeCron, useArtisan, includeFailstackCosts);
                     });
                     return; // Exit early to wait for payment modal
                 }
                 
                 // Use the isUsingCostumeCron variable we defined earlier
-                const simulationResults = await runSimulation(item, startLevel, targetLevel, startingFS, attempts, useCron, useMemFrags, praygeOption, isUsingCostumeCron, useArtisan);
+                const simulationResults = await runSimulation(item, startLevel, targetLevel, startingFS, attempts, useCron, useMemFrags, praygeOption, isUsingCostumeCron, useArtisan, includeFailstackCosts);
                 displaySimulationResults(simulationResults);
             } catch (error) {
                 console.error('Error in simulation:', error);
