@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     };
 
     // Origin of Dark Hunger failstack increase table
-    // Item ID 5998: Origin of Dark Hunger - Special item that increases failstack based on current FS level
+    // Item ID 65319: Origin of Dark Hunger - Special item that increases failstack based on current FS level
     const originOfDarkHungerIncrease = {
         100: 26, 101: 26,
         102: 25, 103: 25, 104: 25, 105: 25,
@@ -332,7 +332,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const costPerFS = (costGap * despairPrice) / fsGap;
                 
                 const additionalCost = remainingFS * costPerFS;
-                const additionalCount = Math.ceil(remainingFS * costGap / fsGap);
+                // Use exact fractional count instead of rounding up
+                const additionalCount = remainingFS * costGap / fsGap;
                 
                 totalCost += additionalCost;
                 totalCount += additionalCount;
@@ -400,7 +401,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const costPerFS = costGap / fsGap;
                 const additionalFS = targetFS - lowerLevel;
                 
-                crystallizedDespairCount = Math.ceil(lowerData.quantity + (additionalFS * costPerFS));
+                // Use exact fractional count instead of rounding up
+                crystallizedDespairCount = lowerData.quantity + (additionalFS * costPerFS);
                 crystallizedDespairCost = crystallizedDespairCount * despairPrice;
             } else if (lowerLevel !== null && upperLevel === null) {
                 // targetFS is above the highest defined level, use the highest level cost
@@ -439,7 +441,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const costPerFS = costGap / fsGap;
                 const additionalFS = targetFS - lowerLevel;
                 
-                blackStoneCount = Math.ceil(lowerData.quantity + (additionalFS * costPerFS));
+                // Use exact fractional count instead of rounding up
+                blackStoneCount = lowerData.quantity + (additionalFS * costPerFS);
                 blackStoneCost = blackStoneCount * blackStonePrice;
             } else if (lowerLevel === null && upperLevel !== null) {
                 // targetFS is below our minimum defined level, interpolate from 0 to first level
@@ -447,7 +450,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const firstData = failstackCosts[firstLevel];
                 const costPerFS = firstData.quantity / firstLevel;
                 
-                blackStoneCount = Math.ceil(targetFS * costPerFS);
+                // Use exact fractional count instead of rounding up
+                blackStoneCount = targetFS * costPerFS;
                 blackStoneCost = blackStoneCount * blackStonePrice;
             }
             
@@ -483,7 +487,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const firstCrystallizedData = failstackCosts[firstCrystallizedLevel];
                     const costPerFS = (firstCrystallizedData.quantity * despairPrice) / firstCrystallizedLevel;
                     
-                    crystallizedDespairCount = Math.ceil(targetFS * costPerFS / despairPrice);
+                    // Use exact fractional count instead of rounding up
+                    crystallizedDespairCount = targetFS * costPerFS / despairPrice;
                     crystallizedDespairCost = crystallizedDespairCount * despairPrice;
                     totalCost = crystallizedDespairCost;
                 }
@@ -501,28 +506,70 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     /**
      * Calculates how many Origin of Dark Hunger items needed to build from startFS to targetFS
+     * Uses a more accurate cumulative approach for intermediate failstack levels
      * @param {number} startFS - Starting failstack level
      * @param {number} fsToGain - How many failstacks to gain
      * @returns {Promise<Object>} - Cost and count data
      */
     async function calculateOriginOfDarkHungerCost(startFS, fsToGain) {
-        const hungerPrice = await fetchItemPrice(currentRegion, 5998); // Origin of Dark Hunger
-        let currentFS = startFS;
-        let count = 0;
-        let fsGained = 0;
-
-        while (fsGained < fsToGain && currentFS < 299) {
-            const fsIncrease = originOfDarkHungerIncrease[currentFS] || 1;
-            count++;
-            fsGained += fsIncrease;
-            currentFS += fsIncrease;
-        }
-
+        const hungerPrice = await fetchItemPrice(currentRegion, 65319); // Origin of Dark Hunger
+        const targetFS = startFS + fsToGain;
+        
+        // Calculate items needed to reach targetFS from 100
+        const targetItemsFromBase = calculateHungerItemsToFS(targetFS);
+        
+        // Calculate items needed to reach startFS from 100  
+        const startItemsFromBase = startFS > 100 ? calculateHungerItemsToFS(startFS) : 0;
+        
+        // The difference is the items needed for our specific range
+        const itemsNeeded = targetItemsFromBase - startItemsFromBase;
+        
+        // Use exact fractional cost instead of rounding up
+        const totalCost = itemsNeeded * hungerPrice;
+        
         return {
-            count,
-            totalCost: count * hungerPrice,
-            actualFSGained: fsGained
+            count: itemsNeeded, // This is now the exact fractional amount
+            totalCost: totalCost,
+            actualFSGained: fsToGain
         };
+    }
+
+    /**
+     * Helper function to calculate how many Origin of Dark Hunger items needed to reach a specific FS from 100
+     * Uses actual simulation of the enhancement process for accuracy
+     * @param {number} targetFS - Target failstack level
+     * @returns {number} - Number of items needed to reach targetFS from 100 (exact fractional amount)
+     */
+    function calculateHungerItemsToFS(targetFS) {
+        if (targetFS <= 100) return 0;
+        
+        let currentFS = 100;
+        let itemsUsed = 0;
+        
+        while (currentFS < targetFS) {
+            const fsIncrease = originOfDarkHungerIncrease[currentFS] || 1;
+            const fsGained = Math.min(fsIncrease, targetFS - currentFS);
+            
+            // Calculate the fractional cost for partial gains
+            if (fsGained < fsIncrease) {
+                // We need a fraction of an item for partial FS gain
+                const fractionNeeded = fsGained / fsIncrease;
+                itemsUsed += fractionNeeded;
+            } else {
+                // We use a full item
+                itemsUsed += 1;
+            }
+            
+            currentFS += fsGained;
+        }
+        
+        // Debug logging for specific ranges - showing the step-by-step calculation
+        if (targetFS >= 160 && targetFS <= 165) {
+            console.log(`Origin of Dark Hunger for FS ${targetFS}: ${Math.ceil(itemsUsed)} items (${itemsUsed.toFixed(2)} exact)`);
+        }
+        
+        // Return the exact fractional amount, not rounded up
+        return itemsUsed;
     }
 
     // ============================================
@@ -1063,7 +1110,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         4987: "Concentrated Magical Black Gem",
         752023: "Mass of Pure Magic",
         8411: "Crystallized Despair",
-        5998: "Origin of Dark Hunger",
+        65319: "Origin of Dark Hunger",
         16001: "Black Stone"
     };
     
@@ -1096,7 +1143,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Crystallized Despair
             8411: 36000000,  // 36 million silver based on estimated value
             // Origin of Dark Hunger
-            5998: 1000000000,  // 1000 million silver based on estimated value (special failstack item)
+            65319: 1000000000,  // 1000 million silver based on estimated value (special failstack item)
             // Black Stone
             16001: 120000 
         
@@ -1121,7 +1168,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Crystallized Despair
             8411: 36000000,  // 36 million silver based on estimated value
             // Origin of Dark Hunger
-            5998: 1000000000,  // 1000 million silver based on estimated value (special failstack item)
+            65319: 1000000000,  // 1000 million silver based on estimated value (special failstack item)
             // Black Stone
             16001: 120000 
         }
@@ -2940,17 +2987,29 @@ document.addEventListener('DOMContentLoaded', async function() {
                     
                     if (breakdown.blackStoneCount > 0) {
                         if (breakdown.freeFailstacks > 0 || breakdown.paidFailstacks > 0) detailText += ', ';
-                        detailText += `${breakdown.blackStoneCount} Black Stone (${Math.round(breakdown.blackStoneCost).toLocaleString()} Silver)`;
+                        // Show exact count with 2 decimal places for fractional amounts
+                        const blackStoneCountDisplay = breakdown.blackStoneCount % 1 === 0 ? 
+                            breakdown.blackStoneCount.toString() : 
+                            breakdown.blackStoneCount.toFixed(2);
+                        detailText += `${blackStoneCountDisplay} Black Stone (${Math.round(breakdown.blackStoneCost).toLocaleString()} Silver)`;
                     }
                     
                     if (breakdown.crystallizedDespairCount > 0) {
                         if (breakdown.freeFailstacks > 0 || breakdown.paidFailstacks > 0 || breakdown.blackStoneCount > 0) detailText += ', ';
-                        detailText += `${breakdown.crystallizedDespairCount} Crystallized Despair (${Math.round(breakdown.crystallizedDespairCost).toLocaleString()} Silver)`;
+                        // Show exact count with 2 decimal places for fractional amounts
+                        const despairCountDisplay = breakdown.crystallizedDespairCount % 1 === 0 ? 
+                            breakdown.crystallizedDespairCount.toString() : 
+                            breakdown.crystallizedDespairCount.toFixed(2);
+                        detailText += `${despairCountDisplay} Crystallized Despair (${Math.round(breakdown.crystallizedDespairCost).toLocaleString()} Silver)`;
                     }
                     
                     if (breakdown.originOfDarkHungerCount > 0) {
                         if (breakdown.freeFailstacks > 0 || breakdown.paidFailstacks > 0 || breakdown.blackStoneCount > 0 || breakdown.crystallizedDespairCount > 0) detailText += ', ';
-                        detailText += `${breakdown.originOfDarkHungerCount} Origin of Dark Hunger (${Math.round(breakdown.originOfDarkHungerCost).toLocaleString()} Silver)`;
+                        // Show exact count with 2 decimal places for fractional amounts
+                        const hungerCountDisplay = breakdown.originOfDarkHungerCount % 1 === 0 ? 
+                            breakdown.originOfDarkHungerCount.toString() : 
+                            breakdown.originOfDarkHungerCount.toFixed(2);
+                        detailText += `${hungerCountDisplay} Origin of Dark Hunger (${Math.round(breakdown.originOfDarkHungerCost).toLocaleString()} Silver)`;
                     }
                     
                     detailText += '</span>';
