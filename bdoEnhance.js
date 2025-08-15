@@ -847,6 +847,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // }
     const enhancementItemRequirements = {
         'Preonne': {
+            notNeedFailstack: true,
             durabilityLoss: 20,                          // Durability loss on failure for all Preonne enhancements
             memFragPerDurability: 1,                     // Each memory fragment restores 1 durability point
             'BASE': { 
@@ -1252,8 +1253,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         const levelData = (itemData[level] && itemData[level].enhancementData) || defaultData;
         const baseRate = levelData.baseChance;
         
-        // Preonne has fixed chance regardless of failstack
-        if (item === 'Preonne') {
+        // Items with fixed chance regardless of failstack
+        if (itemData.notNeedFailstack) {
             return baseRate;
         }
         
@@ -1266,14 +1267,14 @@ document.addEventListener('DOMContentLoaded', async function() {
      * Calculates the exact average number of attempts needed with dynamic failstack increments
      * @param {number} baseRate - The base success rate percentage
      * @param {number} initialFailstack - The starting failstack value
-     * @param {boolean} isPreonne - Whether this calculation is for Preonne (fixed success rate)
+     * @param {boolean} notNeedFailstack - Whether this calculation is for items with fixed success rate
      * @returns {number} - The exact average number of attempts needed
      */
-    function calculateExactAverageAttempts(baseRate, initialFailstack, isPreonne = false) {
+    function calculateExactAverageAttempts(baseRate, initialFailstack, notNeedFailstack = false) {
         if (baseRate === 0) return 0;
 
-        // For Preonne, which has fixed success rate regardless of failstacks
-        if (isPreonne) {
+        // For items with fixed success rate regardless of failstacks
+        if (notNeedFailstack) {
             // Simple geometric distribution formula: 1/p
             return 100 / baseRate;
         }
@@ -1702,12 +1703,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const startIndex = levels.indexOf(selectedStartLevel);
                 const targetIndex = levels.indexOf(selectedTargetLevel);
                 const enhancementCount = targetIndex - startIndex;
+                const itemData = enhancementItemRequirements[selectedItem] || {};
                 
-                // For Preonne, we don't show failstack fields as it has fixed enhancement chance
-                if (selectedItem === 'Preonne') {
-                    // Display a message explaining that Preonne has fixed success rates
+                // For items that don't need failstack fields (have fixed enhancement chance)
+                if (itemData.notNeedFailstack) {
+                    // Display a message explaining that this item has fixed success rates
                     const infoMessage = createElement('div', {
-                        className: 'preonne-info',
+                        className: 'fixed-rate-info',
                         style: {
                             padding: '10px',
                             margin: '10px 0',
@@ -1718,13 +1720,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                             border: '1px solid #444',  // Add subtle border
                             fontWeight: 'bold'  // Make it bold for visibility
                         }
-                    }, 'Preonne has fixed enhancement chances regardless of failstacks.');
+                    }, `${selectedItem} has fixed enhancement chances regardless of failstacks.`);
                     
                     failstackContainer.appendChild(infoMessage);
                     
-                    // Create a container for Preonne cron stone options
-                    const preonneCronContainer = createElement('div', {
-                        className: 'preonne-cron-container',
+                    // Create a container for cron stone options
+                    const fixedRateCronContainer = createElement('div', {
+                        className: 'fixed-rate-cron-container',
                         style: {
                             padding: '15px',
                             marginTop: '15px',
@@ -1742,7 +1744,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                             fontSize: '16px',
                             color: '#e0e0e0'
                         }
-                    }, 'Cron Stone Options for Preonne');
+                    }, `Cron Stone Options for ${selectedItem}`);
                     
                     // Create buttons for selecting all cron types
                     const cronSelectorContainer = createCronSelectorButtons('cron-selector-container', {
@@ -1760,7 +1762,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     cronSelectorContainer.style.marginBottom = '15px';
                     
                     // Add the selector container after the title
-                    preonneCronContainer.appendChild(cronSelectorContainer);
+                    fixedRateCronContainer.appendChild(cronSelectorContainer);
                     
                     // Create cron buttons for each enhancement level
                     for (let i = 0; i < enhancementCount; i++) {
@@ -1975,13 +1977,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                             levelContainer.appendChild(cronControlsContainer);
                         }
                         
-                        // Add level container to the Preonne cron container
-                        preonneCronContainer.appendChild(levelContainer);
+                        // Add level container to the fixed rate cron container
+                        fixedRateCronContainer.appendChild(levelContainer);
                     }
                     
                     // Add the title and cron container to the failstack container
-                    preonneCronContainer.insertBefore(cronTitle, preonneCronContainer.firstChild);
-                    failstackContainer.appendChild(preonneCronContainer);
+                    fixedRateCronContainer.insertBefore(cronTitle, fixedRateCronContainer.firstChild);
+                    failstackContainer.appendChild(fixedRateCronContainer);
                     
                     // Enable calculate button
                     calculateBtn.disabled = false;
@@ -2381,26 +2383,27 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             // Get the base chance for this item level to calculate exact attempts when using cron stones
             const baseChance = enhancementItemRequirements[item]?.[currentLevel]?.enhancementData?.baseChance || 0;
+            const itemData = enhancementItemRequirements[item] || {};
             
             // Calculate expected attempts
             let expectedAttempts = 0;
             let rawAttempts = 100 / successChance; // Standard attempt calculation
             
-            // Special handling for Preonne which has fixed success rates
-            if (item === 'Preonne') {
+            // Special handling for items with fixed success rates
+            if (itemData.notNeedFailstack) {
                 if (useCronForThisLevel) {
-                    // For Preonne with cron stones, use simple formula
+                    // For items with fixed rates and cron stones, use simple formula
                     expectedAttempts = 100 / baseChance;
                 } else {
-                    // For Preonne without cron stones, use standard calculation
+                    // For items with fixed rates without cron stones, use standard calculation
                     expectedAttempts = rawAttempts;
                 }
-                console.log(`Preonne Level ${currentLevel}: Using fixed rate of ${baseChance}%, result: ${expectedAttempts.toFixed(2)} attempts`);
+                console.log(`${item} Level ${currentLevel}: Using fixed rate of ${baseChance}%, result: ${expectedAttempts.toFixed(2)} attempts`);
             }
             // Normal items with variable success rates based on failstacks
             else if (useCronForThisLevel) {
                 // Calculate exact average attempts with dynamic failstack increments
-                expectedAttempts = calculateExactAverageAttempts(baseChance, fs);
+                expectedAttempts = calculateExactAverageAttempts(baseChance, fs, itemData.notNeedFailstack);
                 console.log(`Level ${currentLevel}: Using exact calculation with base rate ${baseChance} and initial FS ${fs}, result: ${expectedAttempts.toFixed(2)} attempts`);
             } else {
                 // Use standard calculation when not using cron stones
@@ -3222,11 +3225,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 await prefetchCommonPrices();
             }
             
-            // For Preonne, we don't need failstack inputs
+            // For items that don't need failstack inputs (fixed success rate)
+            const itemData = enhancementItemRequirements[selectedItem] || {};
             let isValid = true;
             let failstackValues = [];
             
-            if (selectedItem !== 'Preonne') {
+            if (!itemData.notNeedFailstack) {
                 // Get only the failstack inputs (not the Valks' Cry inputs)
                 const failstackInputs = failstackContainer.querySelectorAll('input[id^="fs-"]');
                 
@@ -3252,13 +3256,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                     return;
                 }
             } else {
-                // For Preonne, we'll use dummy failstack values (they won't be used)
+                // For items with fixed success rate, we'll use dummy failstack values (they won't be used)
                 const levels = enhancementLevels[selectedItem];
                 const startIndex = levels.indexOf(selectedStartLevel);
                 const targetIndex = levels.indexOf(selectedTargetLevel);
                 const enhancementCount = targetIndex - startIndex;
                 
-                // Fill with zeros since failstacks don't matter for Preonne
+                // Fill with zeros since failstacks don't matter for items with fixed rates
                 failstackValues = new Array(enhancementCount).fill(0);
             }
             
@@ -3289,13 +3293,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             simTargetLevel.disabled = true;
             simulateBtn.disabled = true;
             
-            // For Preonne, we need to handle the failstack field specially
-            if (selectedItem === 'Preonne') {
-                // Show a message about Preonne having fixed success rates
+            // For items that don't need failstack fields (have fixed enhancement chance)
+            const itemData = enhancementItemRequirements[selectedItem] || {};
+            if (itemData.notNeedFailstack) {
+                // Show a message about this item having fixed success rates
                 if (simFailstack) {
                     simFailstack.disabled = true;
                     simFailstack.value = '';
-                    simFailstack.placeholder = 'Not used for Preonne';
+                    simFailstack.placeholder = `Not used for ${selectedItem}`;
                 }
                 
                 if (simUseRecommendedFS) {
@@ -3306,10 +3311,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // Show informational message
                 const fsContainer = document.getElementById('sim-failstack-container');
                 if (fsContainer) {
-                    const infoElement = document.getElementById('preonne-sim-info');
+                    const infoElement = document.getElementById('fixed-rate-sim-info');
                     if (!infoElement) {
                         const infoMessage = createElement('div', {
-                            id: 'preonne-sim-info',
+                            id: 'fixed-rate-sim-info',
                             style: {
                                 padding: '8px',
                                 margin: '8px 0',
@@ -3320,7 +3325,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 fontWeight: 'bold',
                                 border: '1px solid #444'
                             }
-                        }, 'Preonne has fixed enhancement chances regardless of failstacks.');
+                        }, `${selectedItem} has fixed enhancement chances regardless of failstacks.`);
                         
                         fsContainer.appendChild(infoMessage);
                     }
@@ -3336,8 +3341,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     simUseRecommendedFS.disabled = false;
                 }
                 
-                // Remove any Preonne info message if it exists
-                const infoElement = document.getElementById('preonne-sim-info');
+                // Remove any fixed rate info message if it exists
+                const infoElement = document.getElementById('fixed-rate-sim-info');
                 if (infoElement) {
                     infoElement.remove();
                 }
@@ -3466,10 +3471,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     function checkSimulationInputs() {
         const itemSelected = simItemSelect.value !== '';
         const targetSelected = simTargetLevel.value !== '';
-        const isPreonne = simItemSelect.value === 'Preonne';
+        const itemData = enhancementItemRequirements[simItemSelect.value] || {};
         
-        // For Preonne, we don't need to validate the failstack field
-        const failstackEntered = isPreonne ? true : (simFailstack.value !== '' && !isNaN(parseInt(simFailstack.value)));
+        // For items with fixed rates, we don't need to validate the failstack field
+        const failstackEntered = itemData.notNeedFailstack ? true : (simFailstack.value !== '' && !isNaN(parseInt(simFailstack.value)));
         
         const attemptsEntered = simAttempts.value !== '' && 
                                !isNaN(parseInt(simAttempts.value)) && 
@@ -4331,11 +4336,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         if (!selectedItem || !selectedLevel) return;
         
-        // For Preonne, failstacks are not used so this function should do nothing
-        if (selectedItem === 'Preonne') {
+        // For items with fixed rates, failstacks are not used so this function should do nothing
+        const itemData = enhancementItemRequirements[selectedItem] || {};
+        if (itemData.notNeedFailstack) {
             simFailstack.disabled = true;
             simFailstack.value = '';
-            simFailstack.placeholder = 'Not used for Preonne';
+            simFailstack.placeholder = `Not used for ${selectedItem}`;
             return;
         }
         
