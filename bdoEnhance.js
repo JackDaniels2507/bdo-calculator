@@ -240,7 +240,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 freeFailstacks = Math.max(0, parseInt(freeFailstacksInput.value) || 3);
             }
             if (maxValksInput && maxValksInput.value !== '') {
-                maxPaidFailstacks = Math.max(0, parseInt(maxValksInput.value) || 13);
+                const parsedValue = parseInt(maxValksInput.value);
+                maxPaidFailstacks = isNaN(parsedValue) ? 13 : Math.max(0, parsedValue);
             }
             console.log(`Calculator: Using custom permanent failstack config - Free: ${freeFailstacks}, Valk's Cry: ${maxPaidFailstacks}`);
         } else {
@@ -264,7 +265,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 freeFailstacks = Math.max(0, parseInt(simFreeFailstacksInput.value) || 3);
             }
             if (simMaxValksInput && simMaxValksInput.value !== '') {
-                maxPaidFailstacks = Math.max(0, parseInt(simMaxValksInput.value) || 13);
+                const parsedValue = parseInt(simMaxValksInput.value);
+                maxPaidFailstacks = isNaN(parsedValue) ? 13 : Math.max(0, parsedValue);
             }
             console.log(`Simulation: Using custom permanent failstack config - Free: ${freeFailstacks}, Valk's Cry: ${maxPaidFailstacks}`);
         } else {
@@ -2392,11 +2394,32 @@ document.addEventListener('DOMContentLoaded', async function() {
                         
                         // Calculate success rate for this level
                         const levelSuccessChance = calculateSuccessChance(item, prevLevel, prevFS);
+                        const levelFailChance = 100 - levelSuccessChance;
                         const levelExpectedAttempts = 100 / levelSuccessChance;
+                        const levelExpectedDowngrades = levelFailChance / levelSuccessChance;
                         
-                        // Use a simpler recovery multiplier that doesn't grow exponentially
-                        // Only apply the expected downgrades for the immediate previous level
-                        const currentRecoveryMultiplier = (prevIdx === previousLevels.length - 1) ? recoveryCostMultiplier : recoveryCostMultiplier * 0.5;
+                        // Calculate the correct recovery multiplier for this level
+                        // Each level uses its own expected downgrades, then multiplied by the chain above it
+                        let currentRecoveryMultiplier;
+                        if (prevIdx === previousLevels.length - 1) {
+                            // This is the immediate previous level - use the current level's expected downgrades
+                            currentRecoveryMultiplier = recoveryCostMultiplier;
+                        } else {
+                            // This is a deeper level - calculate the cumulative multiplier
+                            // We need to go through this level each time the level above it fails
+                            let cumulativeMultiplier = recoveryCostMultiplier; // Start with current level downgrades
+                            
+                            // Multiply by expected downgrades of each level between this one and current
+                            for (let chainIdx = prevIdx + 1; chainIdx < previousLevels.length; chainIdx++) {
+                                const chainLevel = previousLevels[chainIdx].level;
+                                const chainFS = previousLevels[chainIdx].failstack;
+                                const chainSuccessChance = calculateSuccessChance(item, chainLevel, chainFS);
+                                const chainFailChance = 100 - chainSuccessChance;
+                                const chainExpectedDowngrades = chainFailChance / chainSuccessChance;
+                                cumulativeMultiplier *= chainExpectedDowngrades;
+                            }
+                            currentRecoveryMultiplier = cumulativeMultiplier;
+                        }
                         
                         // Total cost at this level considering how many times we need to go through it
                         const levelTotalCost = levelCostDetails.totalCost * levelExpectedAttempts * currentRecoveryMultiplier;
@@ -2437,12 +2460,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                         if (includeFailstackCosts && prevFS > 0) {
                             const { freeFailstacks, maxPaidFailstacks } = getPermanentFailstackConfig();
                             const recoveryFailstackCostData = await calculateFailstackBuildCost(prevFS, freeFailstacks, maxPaidFailstacks);
-                            const recoveryFailstackCost = recoveryFailstackCostData.totalCost * levelExpectedAttempts * currentRecoveryMultiplier;
+                            // Use the correct recovery multiplier for this level in the chain
+                            const recoveryFailstackCost = recoveryFailstackCostData.totalCost * currentRecoveryMultiplier;
                             
                             // Add to recovery failstack cost for this level
                             levelRecoveryFailstackCost += recoveryFailstackCost;
                             
-                            console.log(`Adding recovery failstack costs for ${prevLevel} (FS ${prevFS}): ${Math.round(recoveryFailstackCost).toLocaleString()} Silver`);
+                            console.log(`Adding recovery failstack costs for ${prevLevel} (FS ${prevFS}): ${Math.round(recoveryFailstackCost).toLocaleString()} Silver (${currentRecoveryMultiplier.toFixed(2)} recovery multiplier)`);
                         }
                         
                         // Don't exponentially increase the multiplier - use a more conservative approach
