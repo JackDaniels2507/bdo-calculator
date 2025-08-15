@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Permanent failstack constants
     const permanentFailstacks = {
         freeFailstacks: 3, // First 3 permanent failstacks are free
-        maxPaidFailstacks: 13, // Maximum number of paid permanent failstacks (like Valks' Cry)
+        maxPaidFailstacks: 16, // Maximum number of paid permanent failstacks (like Valks' Cry)
         paidFailstackCost: 6555891 // Cost per paid permanent failstack in silver
     };
 
@@ -157,10 +157,10 @@ document.addEventListener('DOMContentLoaded', async function() {
      * Calculates the optimal cost to build a specific failstack level
      * @param {number} targetFS - The target failstack level to build
      * @param {number} freeFailstacks - Number of free permanent failstacks available (default: 3)
-     * @param {number} maxPaidFailstacks - Maximum number of paid permanent failstacks (default: 13)
+     * @param {number} maxPaidFailstacks - Maximum number of paid permanent failstacks (default: 16)
      * @returns {Promise<Object>} - Object containing cost breakdown and details
      */
-    async function calculateFailstackBuildCost(targetFS, freeFailstacks = 3, maxPaidFailstacks = 13) {
+    async function calculateFailstackBuildCost(targetFS, freeFailstacks = 3, maxPaidFailstacks = 16) {
         let totalCost = 0;
         let breakdown = {
             freeFailstacks: 0,
@@ -228,22 +228,31 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     /**
      * Helper function to get permanent failstack configuration values from calculator tab
+     * @param {number} levelIndex - Index for per-level Valks' Cry setting (required)
      * @returns {Object} - Object containing freeFailstacks and maxPaidFailstacks values
      */
-    function getPermanentFailstackConfig() {
+    function getPermanentFailstackConfig(levelIndex) {
         let freeFailstacks = 3; // Default value
-        let maxPaidFailstacks = 13; // Default value
+        let maxPaidFailstacks = 0; // Default to 0 for per-level system
         
         // Only use custom values if the checkbox is checked and inputs exist
         if (includeFailstackCostCheckbox && includeFailstackCostCheckbox.checked) {
             if (freeFailstacksInput && freeFailstacksInput.value !== '') {
                 freeFailstacks = Math.max(0, parseInt(freeFailstacksInput.value) || 3);
             }
-            if (maxValksInput && maxValksInput.value !== '') {
-                const parsedValue = parseInt(maxValksInput.value);
-                maxPaidFailstacks = isNaN(parsedValue) ? 13 : Math.max(0, parsedValue);
+            
+            // Get per-level Valks' Cry value
+            if (levelIndex !== null && levelIndex !== undefined) {
+                const perLevelValksInput = document.getElementById(`valks-cry-level-${levelIndex}`);
+                if (perLevelValksInput && perLevelValksInput.value !== '') {
+                    const parsedValue = parseInt(perLevelValksInput.value);
+                    maxPaidFailstacks = isNaN(parsedValue) ? 0 : Math.max(0, parsedValue);
+                } else {
+                    maxPaidFailstacks = 0;
+                }
             }
-            console.log(`Calculator: Using custom permanent failstack config - Free: ${freeFailstacks}, Valk's Cry: ${maxPaidFailstacks}`);
+            
+            console.log(`Calculator: Using permanent failstack config - Free: ${freeFailstacks}, Valk's Cry: ${maxPaidFailstacks} (Level ${levelIndex})`);
         } else {
             console.log(`Calculator: Using default permanent failstack config - Free: ${freeFailstacks}, Valk's Cry: ${maxPaidFailstacks}`);
         }
@@ -257,17 +266,14 @@ document.addEventListener('DOMContentLoaded', async function() {
      */
     function getSimPermanentFailstackConfig() {
         let freeFailstacks = 3; // Default value
-        let maxPaidFailstacks = 13; // Default value
+        let maxPaidFailstacks = 0; // Default to 0 since simulation doesn't have per-level Valks' Cry inputs
         
         // Only use custom values if the checkbox is checked and inputs exist
         if (simIncludeFailstackCost && simIncludeFailstackCost.checked) {
             if (simFreeFailstacksInput && simFreeFailstacksInput.value !== '') {
                 freeFailstacks = Math.max(0, parseInt(simFreeFailstacksInput.value) || 3);
             }
-            if (simMaxValksInput && simMaxValksInput.value !== '') {
-                const parsedValue = parseInt(simMaxValksInput.value);
-                maxPaidFailstacks = isNaN(parsedValue) ? 13 : Math.max(0, parsedValue);
-            }
+            // Note: Simulation tab doesn't have per-level Valks' Cry inputs, so maxPaidFailstacks stays 0
             console.log(`Simulation: Using custom permanent failstack config - Free: ${freeFailstacks}, Valk's Cry: ${maxPaidFailstacks}`);
         } else {
             console.log(`Simulation: Using default permanent failstack config - Free: ${freeFailstacks}, Valk's Cry: ${maxPaidFailstacks}`);
@@ -565,11 +571,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             currentFS += fsGained;
         }
         
-        // Debug logging for specific ranges - showing the step-by-step calculation
-        if (targetFS >= 160 && targetFS <= 165) {
-            console.log(`Origin of Dark Hunger for FS ${targetFS}: ${Math.ceil(itemsUsed)} items (${itemsUsed.toFixed(2)} exact)`);
-        }
-        
         // Return the exact fractional amount, not rounded up
         return itemsUsed;
     }
@@ -595,7 +596,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Permanent failstack configuration elements
     const permanentFailstackConfig = document.getElementById('permanent-failstack-config');
     const freeFailstacksInput = document.getElementById('free-permanent-fs');
-    const maxValksInput = document.getElementById('max-valks-cry');
     
     // Get simulation tab elements
     const simItemSelect = document.getElementById('sim-item-select');
@@ -614,7 +614,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Simulation permanent failstack configuration elements
     const simPermanentFailstackConfig = document.getElementById('sim-permanent-failstack-config');
     const simFreeFailstacksInput = document.getElementById('sim-free-permanent-fs');
-    const simMaxValksInput = document.getElementById('sim-max-valks-cry');
     
     // Get tab navigation elements
     const tabs = document.querySelectorAll('.tab');
@@ -705,8 +704,67 @@ document.addEventListener('DOMContentLoaded', async function() {
         includeFailstackCostCheckbox.addEventListener('change', function() {
             if (this.checked) {
                 permanentFailstackConfig.style.display = 'block';
+                
+                // Add Valks' Cry inputs to existing failstack input groups
+                const inputGroups = failstackContainer.querySelectorAll('.input-group');
+                inputGroups.forEach((inputGroup, i) => {
+                    // Check if Valks' Cry container already exists
+                    if (!inputGroup.querySelector('.valks-cry-container')) {
+                        // Create container for Valks' Cry input - matching failstack field design
+                        const valksContainer = createElement('div', {
+                            className: 'valks-cry-container',
+                            style: 'display: flex; align-items: center; margin-left: 10px;'
+                        });
+                        
+                        // Create compact label
+                        const valksLabel = createElement('span', {
+                            style: 'color: #e0e0e0; font-size: 0.9em; margin-right: 5px; font-weight: normal;'
+                        }, 'VC:');
+                        
+                        // Create Valks' Cry number input - matching failstack input design
+                        const valksCryInput = createElement('input', {
+                            type: 'number',
+                            id: `valks-cry-level-${i}`,
+                            className: 'valks-cry-level',
+                            min: '0',
+                            max: '16',
+                            value: '13',
+                            placeholder: '13',
+                            title: 'Valks Cry amount (0-16)',
+                            style: 'width: 60px; margin-right: 5px;'
+                        });
+                        
+                        // Add validation to ensure max value is respected
+                        valksCryInput.addEventListener('input', function() {
+                            const value = parseInt(this.value);
+                            if (value > 16) {
+                                this.value = 16;
+                            } else if (value < 0) {
+                                this.value = 0;
+                            }
+                        });
+                        
+                        // Add elements to Valks' Cry container
+                        valksContainer.appendChild(valksLabel);
+                        valksContainer.appendChild(valksCryInput);
+                        
+                        // Find the cron container and insert Valks' Cry before it
+                        const cronContainer = inputGroup.querySelector('.cron-level-container');
+                        if (cronContainer) {
+                            inputGroup.insertBefore(valksContainer, cronContainer);
+                        } else {
+                            inputGroup.appendChild(valksContainer);
+                        }
+                    }
+                });
             } else {
                 permanentFailstackConfig.style.display = 'none';
+                
+                // Remove Valks' Cry inputs from existing failstack input groups
+                const valksCryContainers = failstackContainer.querySelectorAll('.valks-cry-container');
+                valksCryContainers.forEach(container => {
+                    container.remove();
+                });
             }
         });
     }
@@ -733,8 +791,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             useCronCheckbox: !!useCronCheckbox,
             includeFailstackCostCheckbox: !!includeFailstackCostCheckbox,
             permanentFailstackConfig: !!permanentFailstackConfig,
-            freeFailstacksInput: !!freeFailstacksInput,
-            maxValksInput: !!maxValksInput
+            freeFailstacksInput: !!freeFailstacksInput
         },
         simulator: {
             simItemSelect: !!simItemSelect,
@@ -746,8 +803,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             simResultsDiv: !!simResultsDiv,
             simIncludeFailstackCost: !!simIncludeFailstackCost,
             simPermanentFailstackConfig: !!simPermanentFailstackConfig,
-            simFreeFailstacksInput: !!simFreeFailstacksInput,
-            simMaxValksInput: !!simMaxValksInput
+            simFreeFailstacksInput: !!simFreeFailstacksInput
         },
         tabs: tabs.length,
         tabContents: tabContents.length,
@@ -2001,6 +2057,50 @@ document.addEventListener('DOMContentLoaded', async function() {
                         style: 'display: flex; align-items: center;'
                     }, [input]);
                     
+                    // Add Valks' Cry input field for failstack building costs (between failstack and cron)
+                    if (includeFailstackCostCheckbox && includeFailstackCostCheckbox.checked) {
+                        // Create container for Valks' Cry input - matching failstack field design
+                        const valksContainer = createElement('div', {
+                            className: 'valks-cry-container',
+                            style: 'display: flex; align-items: center; margin-left: 10px;'
+                        });
+                        
+                        // Create compact label
+                        const valksLabel = createElement('span', {
+                            style: 'color: #e0e0e0; font-size: 0.9em; margin-right: 5px; font-weight: normal;'
+                        }, 'VC:');
+                        
+                        // Create Valks' Cry number input - matching failstack input design
+                        const valksCryInput = createElement('input', {
+                            type: 'number',
+                            id: `valks-cry-level-${i}`,
+                            className: 'valks-cry-level',
+                            min: '0',
+                            max: '16',
+                            value: '13',
+                            placeholder: '13',
+                            title: 'Valks Cry amount (0-16)',
+                            style: 'width: 60px; margin-right: 5px;'
+                        });
+                        
+                        // Add validation to ensure max value is respected
+                        valksCryInput.addEventListener('input', function() {
+                            const value = parseInt(this.value);
+                            if (value > 16) {
+                                this.value = 16;
+                            } else if (value < 0) {
+                                this.value = 0;
+                            }
+                        });
+                        
+                        // Add elements to Valks' Cry container
+                        valksContainer.appendChild(valksLabel);
+                        valksContainer.appendChild(valksCryInput);
+                        
+                        // Add Valks' Cry container to input group
+                        inputGroup.appendChild(valksContainer);
+                    }
+                    
                     // Only show cron checkbox for non-BASE levels (since BASE level can't downgrade)
                     // The currentLevel is the level before enhancement, targetLevel is after
                     const isFirstLevel = (i === 0);
@@ -2458,7 +2558,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         
                         // Track failstack costs for recovery attempts if enabled
                         if (includeFailstackCosts && prevFS > 0) {
-                            const { freeFailstacks, maxPaidFailstacks } = getPermanentFailstackConfig();
+                            const { freeFailstacks, maxPaidFailstacks } = getPermanentFailstackConfig(prevIdx);
                             const recoveryFailstackCostData = await calculateFailstackBuildCost(prevFS, freeFailstacks, maxPaidFailstacks);
                             // Use the correct recovery multiplier for this level in the chain
                             const recoveryFailstackCost = recoveryFailstackCostData.totalCost * currentRecoveryMultiplier;
@@ -2650,12 +2750,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (includeFailstackCosts) {
             // Calculate the cost for each individual failstack level used
             // This represents the actual cost since you need to build failstacks for each enhancement level
-            const { freeFailstacks, maxPaidFailstacks } = getPermanentFailstackConfig();
             
             for (let i = 0; i < failstacks.length; i++) {
                 const fs = failstacks[i];
                 
                 if (fs > 0) {
+                    const { freeFailstacks, maxPaidFailstacks } = getPermanentFailstackConfig(i);
                     const failstackCostData = await calculateFailstackBuildCost(fs, freeFailstacks, maxPaidFailstacks);
                     failstackCostPerLevel.push(failstackCostData.totalCost);
                     failstackCostBreakdownPerLevel.push(failstackCostData.breakdown);
@@ -2666,9 +2766,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
             
-            // For the overall breakdown display, use the maximum failstack data
+            // For the overall breakdown display, use the maximum failstack data with first level's config
             const maxFailstack = Math.max(...failstacks);
             if (maxFailstack > 0) {
+                const { freeFailstacks, maxPaidFailstacks } = getPermanentFailstackConfig(0);
                 const maxFailstackCostData = await calculateFailstackBuildCost(maxFailstack, freeFailstacks, maxPaidFailstacks);
                 failstackCostBreakdown = maxFailstackCostData.breakdown;
             }
@@ -3006,7 +3107,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     
                     if (breakdown.paidFailstacks > 0) {
                         if (breakdown.freeFailstacks > 0) detailText += ', ';
-                        detailText += `${breakdown.paidFailstacks} paid permanent FS (${Math.round(breakdown.paidFailstackCost).toLocaleString()} Silver)`;
+                        detailText += `${breakdown.paidFailstacks} Valk's Cry (${Math.round(breakdown.paidFailstackCost).toLocaleString()} Silver)`;
                     }
                     
                     if (breakdown.blackStoneCount > 0) {
@@ -3126,8 +3227,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             let failstackValues = [];
             
             if (selectedItem !== 'Preonne') {
-                // Get all failstack inputs
-                const failstackInputs = failstackContainer.querySelectorAll('input[type="number"]');
+                // Get only the failstack inputs (not the Valks' Cry inputs)
+                const failstackInputs = failstackContainer.querySelectorAll('input[id^="fs-"]');
                 
                 // Validate inputs
                 failstackInputs.forEach(input => {
@@ -4485,6 +4586,29 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             // Log to console
             console.log(`${zodiac.emoji} Zodiac selected: ${zodiac.name} - ${zodiac.description}`);
+        });
+    }
+    
+    // Add validation for Free Permanent Failstacks inputs (max 5)
+    if (freeFailstacksInput) {
+        freeFailstacksInput.addEventListener('input', function() {
+            const value = parseInt(this.value);
+            if (value > 5) {
+                this.value = 5;
+            } else if (value < 0) {
+                this.value = 0;
+            }
+        });
+    }
+    
+    if (simFreeFailstacksInput) {
+        simFreeFailstacksInput.addEventListener('input', function() {
+            const value = parseInt(this.value);
+            if (value > 5) {
+                this.value = 5;
+            } else if (value < 0) {
+                this.value = 0;
+            }
         });
     }
     
