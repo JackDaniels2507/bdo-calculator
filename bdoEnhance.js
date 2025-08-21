@@ -1,4 +1,4 @@
-/**
+﻿/**
  * BDO Enhancement Calculator - Simplified version with direct DOM manipulation
  * This version provides a clean, optimized interface for BDO enhancement calculations
  */
@@ -2935,9 +2935,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         // are already included in the levelCost calculations
         let finalTotalCost = totalCostValue;
         
-        // Add recovery costs (materials, cron stones, and failstacks)
+        // Add recovery costs (materials, cron stones, memory fragments, and failstacks)
         finalTotalCost += totalRecoveryCost; // Recovery material costs
         finalTotalCost += totalRecoveryCronCost; // Recovery cron costs
+        finalTotalCost += totalRecoveryMemFragCost; // Recovery memory fragment costs
         finalTotalCost += totalRecoveryFailstackCost; // Recovery failstack costs
 
         // Calculate failstack costs if checkbox is enabled
@@ -3062,89 +3063,149 @@ document.addEventListener('DOMContentLoaded', async function() {
         itemInfo.innerHTML = `<strong>Item:</strong> ${results.item} (${formattedStartLevel} → ${formattedTargetLevel})`;
         
         const costInfo = createElement('p', {}, '');
-        // Always show the total cost without specifying components in this line
-        costInfo.innerHTML = `<strong>Estimated Total Cost:</strong> ${results.totalCost.toLocaleString()} Silver`;
         
-        // Always add cost breakdown section
+        // Calculate the correct total from our breakdown sections
+        let calculatedTotal = 0;
+        
+        // Add material costs
+        const materialCostsTotal = Math.round(results.totalMaterialCost) + Math.round(results.totalRecoveryCost || 0);
+        calculatedTotal += materialCostsTotal;
+        
+        // Add memory fragment costs
+        let memFragCostsTotal = 0;
+        if (results.includeMemFrags) {
+            if (useArtisanMemoryCheckbox && useArtisanMemoryCheckbox.checked) {
+                const originalFragCount = results.totalOriginalMemFragsCount;
+                const memFragPrice = marketPrices[currentRegion][44195] || 0;
+                const wholePart = Math.floor(originalFragCount / 5);
+                const remainder = originalFragCount % 5;
+                const artisanFragCount = wholePart + remainder;
+                memFragCostsTotal += artisanFragCount * memFragPrice;
+            } else {
+                memFragCostsTotal += Math.round(results.totalMemFragsCost);
+            }
+        }
+        if (results.totalRecoveryMemFragCount && results.totalRecoveryMemFragCount > 0) {
+            memFragCostsTotal += Math.round(results.totalRecoveryMemFragCost);
+        }
+        calculatedTotal += memFragCostsTotal;
+        
+        // Add cron stone costs
+        if (results.totalCronCount > 0) {
+            calculatedTotal += Math.round(results.totalCronCost);
+        }
+        
+        // Add failstack costs
+        if (results.includeFailstackCosts && results.totalFailstackCost > 0) {
+            calculatedTotal += Math.round(results.totalFailstackCost);
+        }
+        
+        // Use our calculated total instead of results.totalCost
+        costInfo.innerHTML = `<strong>Estimated Total Cost:</strong> ${calculatedTotal.toLocaleString()} Silver`;
+        
+        // Create organized cost breakdown with grouped sections
         const costBreakdown = createElement('div', { className: 'cost-breakdown' });
         costBreakdown.style.marginLeft = '20px';
         costBreakdown.style.fontSize = '0.9em';
         costBreakdown.style.marginTop = '5px';
         
-        // Start with material cost
-        costBreakdown.innerHTML = `• <strong>Material Cost:</strong> ${Math.round(results.totalMaterialCost).toLocaleString()} Silver`;
+        let breakdownHTML = '';
         
-        // Add recovery cost if any levels have recovery costs
-        if (results.totalRecoveryCost && results.totalRecoveryCost > 0) {
-            costBreakdown.innerHTML += `<br>• <strong>Recovery Material Cost:</strong> ${Math.round(results.totalRecoveryCost).toLocaleString()} Silver`;
-        }
-        
-        // Check if any cron stones were used
-        if (results.totalCronCount > 0) {
-            // Calculate cron stones from direct enhancement and from recovery attempts
-            const directEnhancementCronCount = results.cronStoneCount[0] > 0 ? Math.round(results.cronStoneCount[0]) : 0;
-            const directEnhancementCronCost = results.cronCost[0] > 0 ? Math.round(results.cronCost[0]) : 0;
-            
-            // Calculate direct cron costs from all enhancement attempts (excluding recovery)
-            const totalDirectCronCost = Math.round(results.totalCronCost - (results.totalRecoveryCronCost || 0));
-            const totalDirectCronCount = Math.round(results.totalCronCount - (results.totalRecoveryCronCount || 0));
-            
-            // Show direct enhancement cron costs
-            if (totalDirectCronCount > 0) {
-                costBreakdown.innerHTML += `<br>• <strong>Cron Stone Usage:</strong> ${totalDirectCronCount.toLocaleString()} stones (${totalDirectCronCost.toLocaleString()} Silver)`;
-            }
-            
-            // Show recovery cron costs separately if they exist
-            if (results.totalRecoveryCronCount && results.totalRecoveryCronCount > 0) {
-                costBreakdown.innerHTML += `<br>• <strong>Recovery Cron Stone Usage:</strong> ${Math.round(results.totalRecoveryCronCount).toLocaleString()} stones (${Math.round(results.totalRecoveryCronCost).toLocaleString()} Silver)`;
-            }
-            
-            // Show recovery memory fragment costs separately if they exist
-            if (results.totalRecoveryMemFragCount && results.totalRecoveryMemFragCount > 0) {
-                costBreakdown.innerHTML += `<br>• <strong>Recovery Memory Fragment Usage:</strong> ${Math.round(results.totalRecoveryMemFragCount).toLocaleString()} fragments (${Math.round(results.totalRecoveryMemFragCost).toLocaleString()} Silver)`;
+        // === MATERIAL COSTS SECTION ===
+        const totalMaterialCosts = Math.round(results.totalMaterialCost) + Math.round(results.totalRecoveryCost || 0);
+        if (totalMaterialCosts > 0) {
+            breakdownHTML += `<br><strong>Total Material Cost: ${totalMaterialCosts.toLocaleString()} Silver</strong>`;
+            breakdownHTML += `<br>&nbsp;&nbsp;• Direct Material Cost: ${Math.round(results.totalMaterialCost).toLocaleString()} Silver`;
+            if (results.totalRecoveryCost && results.totalRecoveryCost > 0) {
+                breakdownHTML += `<br>&nbsp;&nbsp;• Recovery Material Cost: ${Math.round(results.totalRecoveryCost).toLocaleString()} Silver`;
             }
         }
         
-        // Add memory fragment information if included
+        // === MEMORY FRAGMENTS SECTION ===
+        let totalMemFragCosts = 0;
+        let hasMemFrags = false;
+        
         if (results.includeMemFrags) {
             if (useArtisanMemoryCheckbox && useArtisanMemoryCheckbox.checked) {
-                // Use the total original fragments count that we now track separately
-                // Display with proper rounding
+                // Calculate with Artisan's Memory
                 const originalFragCount = results.totalOriginalMemFragsCount;
                 const memFragPrice = marketPrices[currentRegion][44195] || 0;
-                
-                // Recalculate the actual fragment count with Artisan's Memory using the proper formula
-                // Integer division (whole part)
                 const wholePart = Math.floor(originalFragCount / 5);
-                // Remainder calculation
                 const remainder = originalFragCount % 5;
-                // Add the whole part plus the actual remainder value
                 const artisanFragCount = wholePart + remainder;
-                
-                // Calculate costs based on the recalculated fragment count
-                const artisanCost = artisanFragCount * memFragPrice;
-                const originalCost = originalFragCount * memFragPrice;
-                const savings = originalCost - artisanCost;
-                
-                costBreakdown.innerHTML += `<br>• <strong>Memory Fragments:</strong> ${artisanFragCount.toLocaleString()} fragments with Artisan's Memory (${Math.round(artisanCost).toLocaleString()} Silver)`;
-                costBreakdown.innerHTML += `<br><span style="margin-left: 15px; font-size: 0.9em; color: #27ae60;">✓ Saved ~${Math.round(savings).toLocaleString()} Silver by using Artisan's Memory (reduced from ${originalFragCount.toLocaleString()} fragments)</span>`;
+                totalMemFragCosts += artisanFragCount * memFragPrice;
+                hasMemFrags = true;
             } else {
-                costBreakdown.innerHTML += `<br>• <strong>Memory Fragments:</strong> ${results.totalMemFragsCount.toLocaleString()} fragments (${Math.round(results.totalMemFragsCost).toLocaleString()} Silver)`;
+                totalMemFragCosts += Math.round(results.totalMemFragsCost);
+                hasMemFrags = true;
             }
         }
-
-        // Add failstack cost information if included
+        
+        // Add recovery memory fragment costs
+        if (results.totalRecoveryMemFragCount && results.totalRecoveryMemFragCount > 0) {
+            totalMemFragCosts += Math.round(results.totalRecoveryMemFragCost);
+            hasMemFrags = true;
+        }
+        
+        if (hasMemFrags && totalMemFragCosts > 0) {
+            breakdownHTML += `<br><br><strong>Total Memory Fragment Cost: ${totalMemFragCosts.toLocaleString()} Silver</strong>`;
+            
+            if (results.includeMemFrags) {
+                if (useArtisanMemoryCheckbox && useArtisanMemoryCheckbox.checked) {
+                    const originalFragCount = results.totalOriginalMemFragsCount;
+                    const wholePart = Math.floor(originalFragCount / 5);
+                    const remainder = originalFragCount % 5;
+                    const artisanFragCount = wholePart + remainder;
+                    const artisanCost = artisanFragCount * (marketPrices[currentRegion][44195] || 0);
+                    breakdownHTML += `<br>&nbsp;&nbsp;• Direct Memory Fragments: ${artisanFragCount.toLocaleString()} fragments with Artisan's Memory (${Math.round(artisanCost).toLocaleString()} Silver)`;
+                } else {
+                    breakdownHTML += `<br>&nbsp;&nbsp;• Direct Memory Fragments: ${results.totalMemFragsCount.toLocaleString()} fragments (${Math.round(results.totalMemFragsCost).toLocaleString()} Silver)`;
+                }
+            }
+            
+            if (results.totalRecoveryMemFragCount && results.totalRecoveryMemFragCount > 0) {
+                breakdownHTML += `<br>&nbsp;&nbsp;• Recovery Memory Fragments: ${Math.round(results.totalRecoveryMemFragCount).toLocaleString()} fragments (${Math.round(results.totalRecoveryMemFragCost).toLocaleString()} Silver)`;
+            }
+        }
+        
+        // === CRON STONES SECTION ===
+        if (results.totalCronCount > 0) {
+            const totalDirectCronCost = Math.round(results.totalCronCost - (results.totalRecoveryCronCost || 0));
+            const totalDirectCronCount = Math.round(results.totalCronCount - (results.totalRecoveryCronCount || 0));
+            const totalCronCosts = Math.round(results.totalCronCost);
+            
+            breakdownHTML += `<br><br><strong>Total Cron Stone Cost: ${totalCronCosts.toLocaleString()} Silver</strong>`;
+            
+            if (totalDirectCronCount > 0) {
+                breakdownHTML += `<br>&nbsp;&nbsp;• Direct Cron Stones: ${totalDirectCronCount.toLocaleString()} stones (${totalDirectCronCost.toLocaleString()} Silver)`;
+            }
+            
+            if (results.totalRecoveryCronCount && results.totalRecoveryCronCount > 0) {
+                breakdownHTML += `<br>&nbsp;&nbsp;• Recovery Cron Stones: ${Math.round(results.totalRecoveryCronCount).toLocaleString()} stones (${Math.round(results.totalRecoveryCronCost).toLocaleString()} Silver)`;
+            }
+        }
+        
+        // === FAILSTACK COSTS SECTION ===
         if (results.includeFailstackCosts && results.totalFailstackCost > 0) {
             const directFailstackCost = results.totalFailstackCost - (results.totalRecoveryFailstackCost || 0);
+            const totalFailstackCosts = Math.round(results.totalFailstackCost);
+            
+            breakdownHTML += `<br><br><strong>Total Failstack Building Cost: ${totalFailstackCosts.toLocaleString()} Silver</strong>`;
+            
+            if (directFailstackCost > 0) {
+                breakdownHTML += `<br>&nbsp;&nbsp;• Direct Failstack Building: ${Math.round(directFailstackCost).toLocaleString()} Silver`;
+            }
             
             if (results.totalRecoveryFailstackCost && results.totalRecoveryFailstackCost > 0) {
-                costBreakdown.innerHTML += `<br>• <strong>Failstack Building Cost:</strong> ${Math.round(directFailstackCost).toLocaleString()} Silver`;
-                costBreakdown.innerHTML += `<br>• <strong>Recovery Failstack Building Cost:</strong> ${Math.round(results.totalRecoveryFailstackCost).toLocaleString()} Silver`;
-            } else {
-                costBreakdown.innerHTML += `<br>• <strong>Failstack Building Cost:</strong> ${Math.round(results.totalFailstackCost).toLocaleString()} Silver`;
+                breakdownHTML += `<br>&nbsp;&nbsp;• Recovery Failstack Building: ${Math.round(results.totalRecoveryFailstackCost).toLocaleString()} Silver`;
             }
-            // Note: Detailed breakdown is shown per enhancement level below
         }
+        
+        // Set the final HTML (remove the first <br> if it exists)
+        costBreakdown.innerHTML = breakdownHTML.startsWith('<br>') ? breakdownHTML.substring(4) : breakdownHTML;
+        
+        // Set the final HTML (remove the first <br> if it exists)
+        costBreakdown.innerHTML = breakdownHTML.startsWith('<br>') ? breakdownHTML.substring(4) : breakdownHTML;
         
         // Always add the cost breakdown to the cost info
         costInfo.appendChild(costBreakdown);
