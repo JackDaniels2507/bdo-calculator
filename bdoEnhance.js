@@ -719,7 +719,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         // Create compact label
                         const valksLabel = createElement('span', {
                             style: 'color: #e0e0e0; font-size: 0.9em; margin-right: 5px; font-weight: normal;'
-                        }, 'VC:');
+                        }, 'Include VC:');
                         
                         // Create Valks' Cry number input - matching failstack input design
                         const valksCryInput = createElement('input', {
@@ -834,13 +834,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     // This structure maps each enhanceable item to all the data needed for enhancements
     // Format: { 
     //   itemName: { 
-    //     durabilityLoss: number,                   // Durability loss on failure for this item (moved to item level)
+    //     notNeedFailstack: boolean,                // Whether item needs failstack inputs (optional)
     //     memFragPerDurability: number,              // How many durability points each memory fragment restores (e.g., 1 for most items, 2 for boss gear)
     //     currentLevel: { 
     //       materials: [{itemId: id, count: count}],  // Materials needed to go from currentLevel to next level
     //       cronStones: count,                        // Cron stones needed for this enhancement
+    //       durabilityLoss: number,                   // Durability loss on failure for this specific level
     //       enhancementData: {                        // Data for calculating enhancement success chances
     //         baseChance: number,                     // Base success chance percentage at 0 failstacks
+    //         recommendedFS: number                   // Recommended failstack level (optional)
     //       }
     //     } 
     //   }
@@ -848,11 +850,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     const enhancementItemRequirements = {
         'Preonne': {
             notNeedFailstack: true,
-            durabilityLoss: 20,                          // Durability loss on failure for all Preonne enhancements
             memFragPerDurability: 1,                     // Each memory fragment restores 1 durability point
             'BASE': { 
                 materials: [{ itemId: 4987, count: 15 }],    // Essence of Dawn x1 for BASE->I
                 cronStones: 0,                               // No cron stones needed for BASE->I
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 25.000
                 }
@@ -860,6 +862,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'I': { 
                 materials: [{ itemId: 4987, count: 16 }],    // Essence of Dawn x2 for I->II
                 cronStones: 360,                              // 120 cron stones for I->II
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 20.000,
                 }
@@ -867,6 +870,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'II': { 
                 materials: [{ itemId: 4987, count: 17 }],    // Essence of Dawn x3 for II->III
                 cronStones: 670,                              // 280 cron stones for II->III
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 15.000,
                 }
@@ -874,6 +878,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'III': { 
                 materials: [{ itemId: 4987, count: 18 }],    // Essence of Dawn x4 for III->IV
                 cronStones: 990,                              // 540 cron stones for III->IV
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 13.000,
                 }
@@ -881,6 +886,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'IV': { 
                 materials: [{ itemId: 4987, count: 19 }],    // Essence of Dawn x6 for IV->V
                 cronStones: 1430,                             // 840 cron stones for IV->V
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 11.000,
                 }
@@ -888,6 +894,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'V': { 
                 materials: [{ itemId: 4987, count: 20 }],    // Essence of Dawn x8 for V->VI
                 cronStones: 1890,                             // 1090 cron stones for V->VI
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 10.000,
                 }
@@ -895,6 +902,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'VI': { 
                 materials: [{ itemId: 4987, count: 21 }],    // Essence of Dawn x10 for VI->VII
                 cronStones: 2390,                             // 1480 cron stones for VI->VII
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 9.000,
                 }
@@ -902,6 +910,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'VII': { 
                 materials: [{ itemId: 4987, count: 22 }],    // Essence of Dawn x12 for VII->VIII
                 cronStones: 2690,                             // 1880 cron stones for VII->VIII
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 8.500,
                 }
@@ -909,6 +918,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'VIII': { 
                 materials: [{ itemId: 4987, count: 23 }],    // Essence of Dawn x15 for VIII->IX
                 cronStones: 2750,                             // 2850 cron stones for VIII->IX
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 8.000,
                 }
@@ -916,17 +926,18 @@ document.addEventListener('DOMContentLoaded', async function() {
             'IX': { 
                 materials: [{ itemId: 4987, count: 25 }],    // Essence of Dawn x18 for IX->X
                 cronStones: 2810,                             // 3650 cron stones for IX->X
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 7.500,
                 }
             },
         },
         'Kharazad': {
-            durabilityLoss: 20,                          // Durability loss on failure for all Kharazad enhancements
             memFragPerDurability: 1,                     // Each memory fragment restores 1 durability point
             'BASE': { 
                 materials: [{ itemId: 820979, count: 1 }],    // Essence of Dawn x1 for BASE->I
                 cronStones: 0,                               // No cron stones needed for BASE->I
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 16.300,
                     recommendedFS: 38
@@ -935,6 +946,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'I': { 
                 materials: [{ itemId: 820979, count: 2 }],    // Essence of Dawn x2 for I->II
                 cronStones: 120,                              // 120 cron stones for I->II
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 7.300,
                     recommendedFS: 66
@@ -943,6 +955,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'II': { 
                 materials: [{ itemId: 820979, count: 3 }],    // Essence of Dawn x3 for II->III
                 cronStones: 280,                              // 280 cron stones for II->III
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 4.570,
                     recommendedFS: 96
@@ -951,6 +964,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'III': { 
                 materials: [{ itemId: 820979, count: 4 }],    // Essence of Dawn x4 for III->IV
                 cronStones: 540,                              // 540 cron stones for III->IV
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 2.890,
                     recommendedFS: 142
@@ -959,6 +973,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'IV': { 
                 materials: [{ itemId: 820979, count: 6 }],    // Essence of Dawn x6 for IV->V
                 cronStones: 840,                             // 840 cron stones for IV->V
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 1.910,
                     recommendedFS: 161
@@ -967,6 +982,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'V': { 
                 materials: [{ itemId: 820979, count: 8 }],    // Essence of Dawn x8 for V->VI
                 cronStones: 1090,                             // 1090 cron stones for V->VI
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 1.290,
                     recommendedFS: 191
@@ -975,6 +991,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'VI': { 
                 materials: [{ itemId: 820979, count: 10 }],   // Essence of Dawn x10 for VI->VII
                 cronStones: 1480,                             // 1480 cron stones for VI->VII
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 0.880,
                     recommendedFS: 225
@@ -983,6 +1000,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'VII': { 
                 materials: [{ itemId: 820979, count: 12 }],   // Essence of Dawn x12 for VII->VIII
                 cronStones: 1880,                             // 1880 cron stones for VII->VIII
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 0.570,
                     recommendedFS: 272
@@ -991,6 +1009,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'VIII': { 
                 materials: [{ itemId: 820979, count: 15 }],   // Essence of Dawn x15 for VIII->IX
                 cronStones: 2850,                             // 2850 cron stones for VIII->IX
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 0.320,
                     recommendedFS: 314
@@ -999,6 +1018,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'IX': { 
                 materials: [{ itemId: 820984, count: 1 }],    // DAWN x1 for IX->X
                 cronStones: 3650,                             // 3650 cron stones for IX->X
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 0.172,
                     recommendedFS: 316
@@ -1007,11 +1027,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             // X is the max level, no more enhancements
         },
         'Sovereign': {
-            durabilityLoss: 20,                          // Durability loss on failure for all Sovereign enhancements
             memFragPerDurability: 1,                     // Each memory fragment restores 1 durability point
             'BASE': { 
                 materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for BASE->I
                 cronStones: 0,                               // No cron stones needed for BASE->I
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 8.550,
                     recommendedFS: 48
@@ -1020,6 +1040,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'I': { 
                 materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for I->II
                 cronStones: 320,                               // 320 cron stones for I->II
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 4.120,
                     recommendedFS: 66
@@ -1028,6 +1049,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'II': { 
                 materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for II->III
                 cronStones: 560,                              // 560 cron stones for II->III
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 2.000,
                     recommendedFS: 106
@@ -1036,6 +1058,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'III': { 
                 materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for III->IV
                 cronStones: 780,                              // 780 cron stones for III->IV
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 0.910,
                     recommendedFS: 191
@@ -1044,6 +1067,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'IV': { 
                 materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for IV->V
                 cronStones: 970,                              // 970 cron stones for IV->V
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 0.469,
                     recommendedFS: 234
@@ -1052,6 +1076,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'V': { 
                 materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for V->VI
                 cronStones: 1350,                             // 1350 cron stones for V->VI
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 0.273,
                     recommendedFS: 290
@@ -1060,6 +1085,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'VI': { 
                 materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for VI->VII
                 cronStones: 1550,                             // 1550 cron stones for VI->VII
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 0.160,
                     recommendedFS: 314
@@ -1068,6 +1094,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'VII': { 
                 materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for VII->VIII
                 cronStones: 2250,                             // 2250 cron stones for VII->VIII
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 0.107,
                     recommendedFS: 316
@@ -1076,6 +1103,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'VIII': { 
                 materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for VIII->IX
                 cronStones: 2760,                             // 2760 cron stones for VIII->IX
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 0.049,
                     recommendedFS: 346
@@ -1084,6 +1112,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             'IX': { 
                 materials: [{ itemId: 820934, count: 1 }],    // Primordial Black Stone x1 for IX->X
                 cronStones: 3920,                             // 3920 cron stones for IX->X
+                durabilityLoss: 20,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 0.024,
                     recommendedFS: 346
@@ -1092,7 +1121,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             // X is the max level, no more enhancements
         },
         'Fallen God\'s Armor': {
-            durabilityLoss: 30,                          // Durability loss on failure for all Fallen God's Armor enhancements
             memFragPerDurability: 1,                     // Each memory fragment restores 1 durability point
             'BASE': { 
                 materials: [
@@ -1101,6 +1129,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     { itemId: 752023, count: 1 }          // Mass of Pure Magic x1
                 ],  
                 cronStones: 0,                               // No cron stones needed for BASE->I
+                durabilityLoss: 30,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 2.000,
                     recommendedFS: 76
@@ -1113,6 +1142,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     { itemId: 752023, count: 1 }          // Mass of Pure Magic x1
                 ],    
                 cronStones: 1500,                             // 1500 cron stones for I->II
+                durabilityLoss: 30,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 1.000,
                     recommendedFS: 142
@@ -1125,6 +1155,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     { itemId: 752023, count: 1 }          // Mass of Pure Magic x1
                 ],    
                 cronStones: 2100,                             // 1800 cron stones for II->III
+                durabilityLoss: 30,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 0.500,
                     recommendedFS: 272
@@ -1137,6 +1168,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     { itemId: 752023, count: 1 }          // Mass of Pure Magic x1
                 ],   
                 cronStones: 2700,                             // 2500 cron stones for III->IV
+                durabilityLoss: 30,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 0.200,
                     recommendedFS: 314
@@ -1149,6 +1181,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     { itemId: 752023, count: 1 }          // Mass of Pure Magic x1
                 ],    
                 cronStones: 4000,                             // 3200 cron stones for IV->V
+                durabilityLoss: 30,                          // Durability loss on failure for this level
                 enhancementData: {
                     baseChance: 0.0025,
                     recommendedFS: 346
@@ -1379,7 +1412,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         let memFragsCount = 0;
         if (useMemFrags && requirements) {
            
-            const durabilityLoss = enhancementItemRequirements[item]?.durabilityLoss || 0;
+            const durabilityLoss = enhancementItemRequirements[item]?.[level]?.durabilityLoss || 0;
             const memFragPerDurability = enhancementItemRequirements[item]?.memFragPerDurability || 1;
             
             // Check if Artisan's Memory is being used (5x efficiency)
@@ -1439,7 +1472,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.log(`Total attempt cost for ${item} ${level}: ${totalCost.toLocaleString()} (materials: ${materialsCost.toLocaleString()}, cron: ${cronCost.toLocaleString()}, memory frags calculated separately: ${memFragsCost.toLocaleString()})`);
         
         // Get the durability loss and memory fragment per durability values
-        const durabilityLossVal = enhancementItemRequirements[item]?.durabilityLoss || 0;
+        const durabilityLossVal = enhancementItemRequirements[item]?.[level]?.durabilityLoss || 0;
         const memFragPerDurabilityVal = enhancementItemRequirements[item]?.memFragPerDurability || 1;
         
         // Calculate the original fragment count regardless of Artisan's Memory
@@ -2070,7 +2103,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         // Create compact label
                         const valksLabel = createElement('span', {
                             style: 'color: #e0e0e0; font-size: 0.9em; margin-right: 5px; font-weight: normal;'
-                        }, 'VC:');
+                        }, 'Include VC:');
                         
                         // Create Valks' Cry number input - matching failstack input design
                         const valksCryInput = createElement('input', {
@@ -2321,12 +2354,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         const successChancesArray = [];
         const expectedAttemptsArray = [];
         const costPerLevelArray = [];
+        const directCostArray = []; // New array for direct costs only
         const materialsCostArray = [];
         const memFragsCostArray = [];
         const memFragsCountArray = [];
         const originalMemFragsCountArray = []; // New array for original fragment counts
         const recoveryCostArray = []; // New array for recovery costs
         const recoveryFailstackCostArray = []; // New array for recovery failstack costs
+        const recoveryCronCostArray = []; // New array for recovery cron costs per level
+        const recoveryMemFragCostArray = []; // New array for recovery memory fragment costs per level
+        const recoveryMemFragCountArray = []; // New array for recovery memory fragment counts per level
         const cronCostArray = [];
         const cronStoneCountArray = [];
         let totalAttempts = 0;
@@ -2336,6 +2373,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         let totalOriginalMemFragsCount = 0; // New total for original fragment counts
         let totalRecoveryCost = 0; // New total for recovery costs
         let totalRecoveryFailstackCost = 0; // New total for recovery failstack costs
+        let totalRecoveryCronCost = 0; // New total for recovery cron costs
+        let totalRecoveryCronCount = 0; // New total for recovery cron count
+        let totalRecoveryMemFragCost = 0; // New total for recovery memory fragment costs
+        let totalRecoveryMemFragCount = 0; // New total for recovery memory fragment count
         let totalCronCost = 0;
         let totalCronCount = 0;
         
@@ -2435,6 +2476,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             let levelMemFragsCount = 0;
             let levelRecoveryCost = 0; // Track recovery cost separately for display
             let levelRecoveryFailstackCost = 0; // Track recovery failstack cost separately
+            let levelRecoveryCronCost = 0; // Track recovery cron cost separately for display
+            let levelRecoveryMemFragCost = 0; // Track recovery memory fragment cost separately for display
+            let levelRecoveryMemFragCount = 0; // Track recovery memory fragment count separately for display
             
             if (!useCronForThisLevel && currentLevel !== 'BASE') {
                 // When not using cron stones and item is not at BASE level,
@@ -2460,21 +2504,39 @@ document.addEventListener('DOMContentLoaded', async function() {
                     let recoveryCostMultiplier = expectedDowngrades; // How many times we expect to recover
                     
                     // Build an array of all previous levels that need re-enhancement
+                    // Only include levels that didn't use cron stones in the main enhancement path
                     const previousLevels = [];
                     for (let prevIdx = 0; prevIdx < index; prevIdx++) {
                         const lvl = levels[startIndex + prevIdx];
                         const fs = failstacks[prevIdx];
-                        previousLevels.push({ level: lvl, failstack: fs });
+                        
+                        // Check if this previous level used cron stones in the main enhancement
+                        const prevLevelCronCheckbox = document.getElementById(`use-cron-level-${prevIdx}`);
+                        const prevLevelUsedCron = prevLevelCronCheckbox ? prevLevelCronCheckbox.checked : false;
+                        
+                        if (!prevLevelUsedCron) {
+                            // This level didn't use cron stones, so it can be downgraded to
+                            previousLevels.push({ level: lvl, failstack: fs, levelIndex: prevIdx });
+                        } else {
+                            // If this level used cron stones, it acts as a "floor" - we can't downgrade below it
+                            // Clear previous levels since we can't downgrade past a cron-protected level
+                            previousLevels.length = 0;
+                            console.log(`${lvl} uses cron stones - acts as downgrade protection floor`);
+                            // Don't break here - we still need to check if subsequent levels use cron stones
+                        }
                     }
+                    
+                    console.log(`Recovery chain for ${currentLevel}: ${previousLevels.map(p => p.level).join(' → ')} (${previousLevels.length} levels to recover)`);
                     
                     // Calculate costs for each level we need to recover through
                     for (let prevIdx = previousLevels.length - 1; prevIdx >= 0; prevIdx--) {
                         const prevLevel = previousLevels[prevIdx].level;
                         const prevFS = previousLevels[prevIdx].failstack;
+                        const actualLevelIndex = previousLevels[prevIdx].levelIndex; // Use the actual level index from main path
                         
                         // Determine if we should use cron for this recovery level
                         // Use the same logic as the main enhancement level - check per-level checkbox
-                        const recoveryLevelCronCheckbox = document.getElementById(`use-cron-level-${prevIdx}`);
+                        const recoveryLevelCronCheckbox = document.getElementById(`use-cron-level-${actualLevelIndex}`);
                         const recoveryLevelCronEnabled = recoveryLevelCronCheckbox ? recoveryLevelCronCheckbox.checked : false;
                         const useCronForRecovery = recoveryLevelCronEnabled;
                         
@@ -2561,7 +2623,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         
                         // Track failstack costs for recovery attempts if enabled
                         if (includeFailstackCosts && prevFS > 0) {
-                            const { freeFailstacks, maxPaidFailstacks } = getPermanentFailstackConfig(prevIdx);
+                            const { freeFailstacks, maxPaidFailstacks } = getPermanentFailstackConfig(actualLevelIndex);
                             const recoveryFailstackCostData = await calculateFailstackBuildCost(prevFS, freeFailstacks, maxPaidFailstacks);
                             // Use the correct recovery multiplier for this level in the chain
                             const recoveryFailstackCost = recoveryFailstackCostData.totalCost * currentRecoveryMultiplier;
@@ -2576,8 +2638,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                         // This prevents unrealistic explosion of recovery costs
                     }
                     
-                    // Store recovery cost separately for display purposes
-                    levelRecoveryCost = downgradeCost;
+                    // Add recovery cost separately for display purposes (don't overwrite existing recovery costs)
+                    levelRecoveryCost += downgradeCost;
                     
                     // Calculate memory fragment costs for failures
                     if (useMemFrags) {
@@ -2585,12 +2647,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                         const currentLevelMemFragsCost = costDetails.memFragsCost * (expectedAttempts - 1); // -1 because we succeed once
                         const currentLevelMemFragsCount = costDetails.memFragsCount * (expectedAttempts - 1);
                         
-                        levelMemFragsCost = currentLevelMemFragsCost + downgradedMemFragsCost;
-                        levelMemFragsCount = currentLevelMemFragsCount + downgradedMemFragsCount;
+                        // Keep recovery memory fragments separate for display
+                        levelMemFragsCost = currentLevelMemFragsCost; // Only direct level costs
+                        levelMemFragsCount = currentLevelMemFragsCount; // Only direct level counts
+                        
+                        // Store recovery memory fragment costs separately
+                        levelRecoveryMemFragCost += downgradedMemFragsCost;
+                        levelRecoveryMemFragCount += downgradedMemFragsCount;
                     }
                     
-                    // Total cost is current level attempts + downgrade recovery + memory fragments
-                    levelCost = currentLevelAttemptCost + downgradeCost + levelMemFragsCost;
+                    // Total cost is current level attempts + memory fragments (recovery tracked separately)
+                    levelCost = currentLevelAttemptCost + levelMemFragsCost;
                     
                     console.log(`Including complete downgrade recovery cost for ${currentLevel}: ${downgradeCost.toLocaleString()}`);
                     console.log(`  - ${expectedDowngrades.toFixed(2)} expected initial downgrades`);
@@ -2626,8 +2693,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     levelMemFragsCount = 0;
                 }
                 
-                // No recovery cost when using cron stones
-                levelRecoveryCost = 0;
+                // Note: Recovery costs can still apply from previous levels even when using cron stones
+                // Do not reset levelRecoveryCost here - it may have been calculated from previous level failures
             }
             
             // Store the direct attempts for this level with more precision
@@ -2675,6 +2742,102 @@ document.addEventListener('DOMContentLoaded', async function() {
                 totalAttemptsForThisLevel += recoveryAttempts;
                 console.log(`For ${currentLevel}: Direct attempts: ${expectedAttempts.toFixed(2)}, Recovery attempts: ${recoveryAttempts.toFixed(2)}`);
                 
+                // Calculate recovery costs for the recovery attempts at this level
+                // ONLY if complex recovery wasn't already calculated (i.e., levelRecoveryCost is still 0)
+                if (recoveryAttempts > 0 && levelRecoveryCost === 0) {
+                    // Add failstack costs for recovery attempts if enabled
+                    // Use the failstack for the level we're recovering FROM (the immediate previous level)
+                    if (includeFailstackCosts && index > 0) {
+                        // Find the immediate previous level (the level we downgrade to and need to recover from)
+                        const recoveryFromLevel = levels[startIndex + index - 1];
+                        const recoveryFromFS = failstacks[index - 1] || 0;
+                        
+                        if (recoveryFromFS > 0) {
+                            const { freeFailstacks, maxPaidFailstacks } = getPermanentFailstackConfig(index - 1);
+                            const recoveryFailstackCostData = await calculateFailstackBuildCost(recoveryFromFS, freeFailstacks, maxPaidFailstacks);
+                            
+                            // Calculate the failure rate for the current level (the level that triggers the downgrade)
+                            const currentLevelFS = failstacks[index] || 0;
+                            const currentLevelSuccessChance = calculateSuccessChance(item, currentLevel, currentLevelFS);
+                            const currentLevelFailChance = 100 - currentLevelSuccessChance;
+                            const expectedDowngrades = currentLevelFailChance / currentLevelSuccessChance;
+                            
+                            // Use the same logic as the simple case: failstack cost × failed attempts of current level
+                            const recoveryFailstackCost = recoveryFailstackCostData.totalCost * expectedDowngrades;
+                            
+                            levelRecoveryFailstackCost += recoveryFailstackCost;
+                            console.log(`Adding recovery failstack costs for ${currentLevel} recovery attempts (recovering from ${recoveryFromLevel} with FS ${recoveryFromFS}): ${Math.round(recoveryFailstackCost).toLocaleString()} Silver (${expectedDowngrades.toFixed(2)} expected downgrades)`);
+                        }
+                    }
+                        
+                    // Add material and cron costs for recovery attempts from the previous level
+                    // Always calculate these costs regardless of failstack setting
+                    if (index > 0) {
+                        // Find the immediate previous level (the level we downgrade to and need to recover from)
+                        const recoveryFromLevel = levels[startIndex + index - 1];
+                        
+                        // We need to check if the level we're recovering FROM used cron stones
+                        const prevLevelCronCheckbox = document.getElementById(`use-cron-level-${index - 1}`);
+                        const prevLevelUsedCron = prevLevelCronCheckbox ? prevLevelCronCheckbox.checked : false;
+                        
+                        // Calculate the attempt cost for the level we're recovering from
+                        let isUsingCostumeCronForRecovery = null;
+                        if (prevLevelUsedCron && prevLevelCronCheckbox && prevLevelCronCheckbox.dataset.cronType) {
+                            isUsingCostumeCronForRecovery = prevLevelCronCheckbox.dataset.cronType === 'costume';
+                        }
+                        
+                        const recoveryAttemptCost = await calculateAttemptCost(
+                            item, 
+                            recoveryFromLevel, 
+                            prevLevelUsedCron, 
+                            useMemFrags, // Use the same memory fragment setting as the main calculation
+                            isUsingCostumeCronForRecovery,
+                            useArtisanForCalculator
+                        );
+                        
+                        // Add recovery material costs (always needed for recovery attempts)
+                        const recoveryMaterialCost = recoveryAttemptCost.materialsCost * recoveryAttempts;
+                        levelRecoveryCost += recoveryMaterialCost;
+                        console.log(`Adding recovery material costs for ${currentLevel} recovery attempts (${recoveryFromLevel} materials): ${Math.round(recoveryMaterialCost).toLocaleString()} Silver (${recoveryAttempts.toFixed(2)} recovery attempts)`);
+                        
+                        // Add recovery cron costs if the recovery level used cron stones
+                        if (prevLevelUsedCron) {
+                            const recoveryCronCost = recoveryAttemptCost.cronCost * recoveryAttempts;
+                            
+                            // Track recovery cron costs at level
+                            levelRecoveryCronCost += recoveryCronCost;
+                            
+                            // Track recovery cron costs separately
+                            const cronStoneCount = enhancementItemRequirements[item]?.[recoveryFromLevel]?.cronStones || 0;
+                            const levelCronCount = cronStoneCount * recoveryAttempts;
+                            totalRecoveryCronCount += levelCronCount;
+                            totalRecoveryCronCost += recoveryCronCost;
+                            
+                            // Also track in global cron tracking (keep total tracking for compatibility)
+                            totalCronCount += levelCronCount;
+                            totalCronCost += recoveryCronCost;
+                            
+                            console.log(`Adding recovery cron costs for ${currentLevel} recovery attempts (${recoveryFromLevel} crons): ${Math.round(levelCronCount).toLocaleString()} stones (${Math.round(recoveryCronCost).toLocaleString()} Silver) for ${recoveryAttempts.toFixed(2)} recovery attempts`);
+                        }
+                        
+                        // Add recovery memory fragment costs if enabled
+                        if (useMemFrags) {
+                            const recoveryMemFragCost = recoveryAttemptCost.memFragsCost * recoveryAttempts;
+                            const recoveryMemFragCount = recoveryAttemptCost.memFragsCount * recoveryAttempts;
+                            
+                            // Track recovery memory fragments at level
+                            levelRecoveryMemFragCost += recoveryMemFragCost;
+                            levelRecoveryMemFragCount += recoveryMemFragCount;
+                            
+                            // Track recovery memory fragments separately for display (don't add to levelRecoveryCost)
+                            totalRecoveryMemFragCost += recoveryMemFragCost;
+                            totalRecoveryMemFragCount += recoveryMemFragCount;
+                            
+                            console.log(`Adding recovery memory fragment costs for ${currentLevel} recovery attempts (${recoveryFromLevel} mem frags): ${Math.round(recoveryMemFragCount).toLocaleString()} fragments (${Math.round(recoveryMemFragCost).toLocaleString()} Silver) for ${recoveryAttempts.toFixed(2)} recovery attempts`);
+                        }
+                    }
+                }
+                
                 // Store the recovery attempts in a separate array for display
                 if (!window.recoveryAttemptsArray) {
                     window.recoveryAttemptsArray = [];
@@ -2689,8 +2852,25 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             
             totalAttempts += totalAttemptsForThisLevel;
-            costPerLevelArray.push(levelCost);
-            totalCostValue += levelCost;
+            
+            // Calculate direct cost including materials, memory fragments, cron stones, and failstacks
+            let directCost = levelCost; // This already includes materials + memory fragments + cron stones (if applicable)
+            
+            // Note: Don't add cron stone cost again - it's already included in levelCost via costDetails.totalCost
+            
+            // Add failstack cost if failstack costs are included
+            if (includeFailstackCosts && failstacks[index] > 0) {
+                const { freeFailstacks, maxPaidFailstacks } = getPermanentFailstackConfig(index);
+                const failstackCostData = await calculateFailstackBuildCost(failstacks[index], freeFailstacks, maxPaidFailstacks);
+                directCost += failstackCostData.totalCost;
+            }
+            
+            const totalRecoveryForLevel = levelRecoveryCost + levelRecoveryFailstackCost + levelRecoveryCronCost + levelRecoveryMemFragCost;
+            const totalLevelCost = directCost + totalRecoveryForLevel;
+            
+            costPerLevelArray.push(totalLevelCost); // Store total cost including recovery
+            directCostArray.push(directCost); // Store direct cost only
+            totalCostValue += totalLevelCost;
             
             // Calculate and store material costs (base materials only, not cron or memory fragments)
             const materialsCost = costDetails.materialsCost * (useCronForThisLevel ? expectedAttempts : (expectedAttempts - 1 + 1)); // All attempts need materials
@@ -2706,6 +2886,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Store recovery failstack cost for this level
             recoveryFailstackCostArray.push(levelRecoveryFailstackCost);
             totalRecoveryFailstackCost += levelRecoveryFailstackCost;
+            
+            // Store recovery cron cost for this level
+            recoveryCronCostArray.push(levelRecoveryCronCost);
+            
+            // Store recovery memory fragment cost and count for this level
+            recoveryMemFragCostArray.push(levelRecoveryMemFragCost);
+            recoveryMemFragCountArray.push(Math.round(levelRecoveryMemFragCount)); // Round for consistency with totals
+            
+            // Update totals for recovery memory fragments
+            totalRecoveryMemFragCost += levelRecoveryMemFragCost;
+            totalRecoveryMemFragCount += Math.round(levelRecoveryMemFragCount);
             
             // Track the original memory fragment count (without Artisan's effect)
             // Always use the originalFragCount from costDetails, which is calculated correctly
@@ -2743,6 +2934,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         // The final total cost is just totalCostValue since memory fragment costs 
         // are already included in the levelCost calculations
         let finalTotalCost = totalCostValue;
+        
+        // Add recovery costs (materials, cron stones, and failstacks)
+        finalTotalCost += totalRecoveryCost; // Recovery material costs
+        finalTotalCost += totalRecoveryCronCost; // Recovery cron costs
+        finalTotalCost += totalRecoveryFailstackCost; // Recovery failstack costs
 
         // Calculate failstack costs if checkbox is enabled
         let totalFailstackCost = 0;
@@ -2780,15 +2976,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Add recovery failstack cost to total failstack cost
             totalFailstackCost += totalRecoveryFailstackCost;
             
-            // Add failstack cost to final total
-            finalTotalCost += totalFailstackCost;
+            // Note: Don't add totalFailstackCost to finalTotalCost here because
+            // direct failstack costs are already included in totalCostValue from per-level calculations
+            // Only recovery failstack costs need to be added, which are already included above
             
-            // Add failstack costs to individual level costs for display purposes
-            for (let i = 0; i < costPerLevelArray.length; i++) {
-                if (failstackCostPerLevel[i] > 0) {
-                    costPerLevelArray[i] += failstackCostPerLevel[i];
-                }
-            }
+            // Note: Don't add failstack costs to costPerLevelArray here because
+            // they're already included in the direct cost calculation per level
         } else {
             // Fill arrays with zeros if not including failstack costs
             for (let i = 0; i < failstacks.length; i++) {
@@ -2818,6 +3011,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             rawAttempts: window.rawAttemptsArray || [],
             recoveryAttempts: window.recoveryAttemptsArray || [],
             costPerLevel: costPerLevelArray,
+            directCostPerLevel: directCostArray, // Direct costs per level (without recovery)
             materialsCost: materialsCostArray,
             memFragsCost: memFragsCostArray,
             totalMemFragsCost: Math.round(totalMemFragsCost),
@@ -2829,6 +3023,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             totalRecoveryCost: Math.round(totalRecoveryCost), // Total recovery cost
             recoveryFailstackCost: recoveryFailstackCostArray, // Recovery failstack costs per level
             totalRecoveryFailstackCost: Math.round(totalRecoveryFailstackCost), // Total recovery failstack cost
+            recoveryCronCost: recoveryCronCostArray, // Recovery cron costs per level
+            totalRecoveryCronCost: Math.round(totalRecoveryCronCost), // Total recovery cron cost
+            totalRecoveryCronCount: Math.round(totalRecoveryCronCount), // Total recovery cron count
+            recoveryMemFragCost: recoveryMemFragCostArray, // Recovery memory fragment costs per level
+            recoveryMemFragCount: recoveryMemFragCountArray, // Recovery memory fragment counts per level
+            totalRecoveryMemFragCost: Math.round(totalRecoveryMemFragCost), // Total recovery memory fragment cost
+            totalRecoveryMemFragCount: Math.round(totalRecoveryMemFragCount), // Total recovery memory fragment count
             cronCost: cronCostArray,
             cronStoneCount: cronStoneCountArray,
             totalCronCost: Math.round(totalCronCost),
@@ -2875,7 +3076,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Add recovery cost if any levels have recovery costs
         if (results.totalRecoveryCost && results.totalRecoveryCost > 0) {
-            costBreakdown.innerHTML += `<br>• <strong>Recovery Cost:</strong> ${Math.round(results.totalRecoveryCost).toLocaleString()} Silver`;
+            costBreakdown.innerHTML += `<br>• <strong>Recovery Material Cost:</strong> ${Math.round(results.totalRecoveryCost).toLocaleString()} Silver`;
         }
         
         // Check if any cron stones were used
@@ -2884,12 +3085,24 @@ document.addEventListener('DOMContentLoaded', async function() {
             const directEnhancementCronCount = results.cronStoneCount[0] > 0 ? Math.round(results.cronStoneCount[0]) : 0;
             const directEnhancementCronCost = results.cronCost[0] > 0 ? Math.round(results.cronCost[0]) : 0;
             
-            // Calculate total cron cost from recovery attempts (difference between total and direct)
-            const recoveryCronCount = Math.max(0, Math.round(results.totalCronCount - directEnhancementCronCount));
-            const recoveryCronCost = Math.max(0, Math.round(results.totalCronCost - directEnhancementCronCost));
+            // Calculate direct cron costs from all enhancement attempts (excluding recovery)
+            const totalDirectCronCost = Math.round(results.totalCronCost - (results.totalRecoveryCronCost || 0));
+            const totalDirectCronCount = Math.round(results.totalCronCount - (results.totalRecoveryCronCount || 0));
             
-            // Show cron costs
-            costBreakdown.innerHTML += `<br>• <strong>Total Cron Stone Usage:</strong> ${Math.round(results.totalCronCount).toLocaleString()} stones (${Math.round(results.totalCronCost).toLocaleString()} Silver)`;
+            // Show direct enhancement cron costs
+            if (totalDirectCronCount > 0) {
+                costBreakdown.innerHTML += `<br>• <strong>Cron Stone Usage:</strong> ${totalDirectCronCount.toLocaleString()} stones (${totalDirectCronCost.toLocaleString()} Silver)`;
+            }
+            
+            // Show recovery cron costs separately if they exist
+            if (results.totalRecoveryCronCount && results.totalRecoveryCronCount > 0) {
+                costBreakdown.innerHTML += `<br>• <strong>Recovery Cron Stone Usage:</strong> ${Math.round(results.totalRecoveryCronCount).toLocaleString()} stones (${Math.round(results.totalRecoveryCronCost).toLocaleString()} Silver)`;
+            }
+            
+            // Show recovery memory fragment costs separately if they exist
+            if (results.totalRecoveryMemFragCount && results.totalRecoveryMemFragCount > 0) {
+                costBreakdown.innerHTML += `<br>• <strong>Recovery Memory Fragment Usage:</strong> ${Math.round(results.totalRecoveryMemFragCount).toLocaleString()} fragments (${Math.round(results.totalRecoveryMemFragCost).toLocaleString()} Silver)`;
+            }
         }
         
         // Add memory fragment information if included
@@ -3046,6 +3259,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             detailContent += `, Total Cost: ${Math.round(results.costPerLevel[i]).toLocaleString()} Silver`;
             
+            // Calculate recovery costs for this level
+            const directCost = Math.round(results.directCostPerLevel[i]);
+            const recoveryMaterialCost = Math.round(results.recoveryCost[i] || 0);
+            const recoveryFailstackCost = Math.round(results.recoveryFailstackCost[i] || 0);
+            const recoveryCronCost = Math.round(results.recoveryCronCost[i] || 0);
+            const recoveryMemFragCost = Math.round(results.recoveryMemFragCost[i] || 0);
+            const totalRecoveryForLevel = recoveryMaterialCost + recoveryFailstackCost + recoveryCronCost + recoveryMemFragCost;
+            
+            // Show breakdown if there are recovery costs
+            if (totalRecoveryForLevel > 0) {
+                detailContent += `<br><span style="margin-left: 15px; color: #27ae60; font-size: 0.9em;">→ Direct Cost: ${directCost.toLocaleString()} Silver + Recovery Cost: ${totalRecoveryForLevel.toLocaleString()} Silver</span>`;
+            }
+            
             // Show the material cost
             detailContent += `<br><span style="margin-left: 15px; color: #2980b9;">• Material Cost: ${Math.round(results.materialsCost[i]).toLocaleString()} Silver</span>`;
             
@@ -3147,8 +3373,20 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             // Add recovery cost if this level has recovery costs (moved to bottom)
             if (results.recoveryCost && results.recoveryCost[i] > 0) {
-                detailContent += `<br><span style="margin-left: 15px; color: #e74c3c;">• Recovery Cost: ${Math.round(results.recoveryCost[i]).toLocaleString()} Silver</span>`;
-                detailContent += `<br><span style="margin-left: 30px; font-size: 0.85em; color: #e74c3c;">Cost to re-enhance after expected downgrades</span>`;
+                detailContent += `<br><span style="margin-left: 15px; color: #e74c3c;">• Recovery Material Cost: ${Math.round(results.recoveryCost[i]).toLocaleString()} Silver</span>`;
+                detailContent += `<br><span style="margin-left: 30px; font-size: 0.85em; color: #e74c3c;">Material cost to re-enhance after expected downgrades</span>`;
+            }
+            
+            // Add recovery cron cost if this level has recovery cron costs
+            if (results.recoveryCronCost && results.recoveryCronCost[i] > 0) {
+                detailContent += `<br><span style="margin-left: 15px; color: #e74c3c;">• Recovery Cron Stone Cost: ${Math.round(results.recoveryCronCost[i]).toLocaleString()} Silver</span>`;
+                detailContent += `<br><span style="margin-left: 30px; font-size: 0.85em; color: #e74c3c;">Cron stone cost for recovery attempts</span>`;
+            }
+            
+            // Add recovery memory fragment cost if this level has recovery memory fragment costs
+            if (results.recoveryMemFragCost && results.recoveryMemFragCost[i] > 0) {
+                detailContent += `<br><span style="margin-left: 15px; color: #e74c3c;">• Recovery Memory Fragment Cost: ${Math.round(results.recoveryMemFragCost[i]).toLocaleString()} Silver</span>`;
+                detailContent += `<br><span style="margin-left: 30px; font-size: 0.85em; color: #e74c3c;">${Math.round(results.recoveryMemFragCount[i]).toLocaleString()} fragments for recovery attempts</span>`;
             }
             
             // Add recovery failstack cost if this level has recovery failstack costs (moved to bottom)
@@ -3659,7 +3897,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         let currentEnhancementIndex = 0; // Track which level we're currently enhancing
         
         // Store the durability loss per attempt and mem frags per durability for later calculations
-        results.durabilityLossPerAttempt = enhancementItemRequirements[item]?.durabilityLoss || 0;
+        results.durabilityLossPerAttempt = enhancementItemRequirements[item]?.[startLevel]?.durabilityLoss || 0;
         results.memFragPerDurability = enhancementItemRequirements[item]?.memFragPerDurability || 1;
         
         // Calculate the cost once for all attempts since they're all for the same level transition
@@ -3932,7 +4170,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const memFragPrice = marketPrices[currentRegion][44195] || 0;
             // For the items in the simulation, we need to calculate total durability loss
             // and directly calculate what it would have cost without Artisan's Memory
-            const durabilityPerAttempt = results.durabilityLossPerAttempt || enhancementItemRequirements[results.item]?.durabilityLoss || 0;
+            const durabilityPerAttempt = results.durabilityLossPerAttempt || enhancementItemRequirements[results.item]?.[results.startLevel]?.durabilityLoss || 0;
             const memFragPerDurability = results.memFragPerDurability || enhancementItemRequirements[results.item]?.memFragPerDurability || 1;
             // Total durability loss across all failures
             const totalDurabilityLoss = durabilityPerAttempt * results.failures;
